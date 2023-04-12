@@ -328,7 +328,7 @@ MODULE CRTM_Surface_Define_old
   REAL(fp), PARAMETER :: DEFAULT_SNOW_TEMPERATURE = 263.0_fp   ! K
   REAL(fp), PARAMETER :: DEFAULT_SNOW_DEPTH       = 50.0_fp    ! mm
   REAL(fp), PARAMETER :: DEFAULT_SNOW_DENSITY     = 0.2_fp     ! g/cm^3
-  REAL(fp), PARAMETER :: DEFAULT_SNOW_GRAIN_SIZE  = 2.0_fp     ! mm
+  REAL(fp), PARAMETER :: DEFAULT_SNOW_GRAIN_SIZE  = 2.0e3_fp   ! um (microns)
   ! Ice surface type data
   INTEGER,  PARAMETER :: DEFAULT_ICE_TYPE        = FRESH_ICE
   REAL(fp), PARAMETER :: DEFAULT_ICE_TEMPERATURE = 263.0_fp  ! K

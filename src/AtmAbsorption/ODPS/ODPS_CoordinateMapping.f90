@@ -26,7 +26,7 @@ MODULE ODPS_CoordinateMapping
   USE CRTM_Parameters,           ONLY: ZERO, ONE, TWO, &
                                        EARTH_RADIUS,   &
                                        DEGREES_TO_RADIANS
-
+  
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -43,6 +43,7 @@ MODULE ODPS_CoordinateMapping
   PUBLIC :: Interpolate_Profile_F1_TL
   PUBLIC :: Interpolate_Profile_F1_AD
   PUBLIC :: Compute_Interp_Index
+  PUBLIC :: Geopotential_Height 
 
   ! Parameters used in the geopotential height calculation routines
   ! a factor used in the virtual temperature Tv calculation

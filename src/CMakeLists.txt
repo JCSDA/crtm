@@ -28,6 +28,7 @@ list( APPEND crtm_src_files
 			Atmosphere/Cloud/CRTM_CloudCover_Define.f90
 			Atmosphere/Cloud/CRTM_Cloud_Define.f90
 			Atmosphere/CRTM_Atmosphere_Define.f90
+			Atmosphere/CRTM_Hypsometric.f90
 			Atmosphere/CRTM_Atmosphere.f90
 			Atmosphere/CRTM_Model_Profiles.f90
 			Atmosphere/iAtm_Define.f90
@@ -39,13 +40,16 @@ list( APPEND crtm_src_files
 			AtmScatter/CRTM_MoleculeScatter.f90
 			ChannelInfo/CRTM_ChannelInfo_Define.f90
 			Coefficients/ACCoeff/ACCoeff_Binary_IO.f90
+			Coefficients/ACCoeff/ACCoeff_netCDF_IO.f90
 			Coefficients/ACCoeff/ACCoeff_Define.f90
 			Coefficients/AerosolCoeff/AerosolCoeff_Binary_IO.f90
 			Coefficients/AerosolCoeff/AerosolCoeff_Define.f90
 			Coefficients/AerosolCoeff/AerosolCoeff_netCDF_IO.f90
+			Coefficients/AerosolCoeff/AerosolCoeff_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_Binary_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_Define.f90
 			Coefficients/CloudCoeff/CloudCoeff_netCDF_IO.f90
+			Coefficients/CloudCoeff/CloudCoeff_IO.f90
 			Coefficients/CRTM_AerosolCoeff.f90
 			Coefficients/CRTM_CloudCoeff.f90
 			Coefficients/CRTM_IRiceCoeff.f90
@@ -61,9 +65,17 @@ list( APPEND crtm_src_files
 			Coefficients/CRTM_VISwaterCoeff.f90
 			Coefficients/EmisCoeff/IR_Land/LSEatlas/LSEatlas_Define.f90
 			Coefficients/EmisCoeff/IR_Water/IRwaterCoeff_Define.f90
+			Coefficients/EmisCoeff/IR_Water/IRwaterCoeff_IO.f90
+			Coefficients/EmisCoeff/IR_Water/IRwaterCoeff_netCDF_IO.f90
+			Coefficients/EmisCoeff/IR_Snow/IRsnowCoeff_Define.f90
+			Coefficients/EmisCoeff/IR_Snow/IRsnowCoeff_IO.f90
+			Coefficients/EmisCoeff/IR_Snow/IRsnowCoeff_Binary_IO.f90
+			Coefficients/EmisCoeff/IR_Snow/IRsnowCoeff_netCDF_IO.f90
 			Coefficients/EmisCoeff/MW_Water/MWwaterCoeff_Define.f90
 			Coefficients/EmisCoeff/MW_Water/MWwaterLUT/MWwaterLUT_Define.f90
 			Coefficients/EmisCoeff/SEcategory/SEcategory_Define.f90
+			Coefficients/EmisCoeff/SEcategory/SEcategory_IO.f90
+			Coefficients/EmisCoeff/SEcategory/SEcategory_netCDF_IO.f90
 			Coefficients/FitCoeff/FitCoeff_Define.f90
 			Coefficients/FitCoeff/FitCoeff_Destroy.inc
 			Coefficients/FitCoeff/FitCoeff_Equal.inc
@@ -72,13 +84,18 @@ list( APPEND crtm_src_files
 			Coefficients/FitCoeff/FitCoeff_SetValue.inc
 			Coefficients/FitCoeff/FitCoeff_WriteFile.inc
 			Coefficients/NLTECoeff/NLTECoeff_Binary_IO.f90
+			Coefficients/NLTECoeff/NLTECoeff_netCDF_IO.f90
 			Coefficients/NLTECoeff/NLTECoeff_Define.f90
 			Coefficients/SpcCoeff/SpcCoeff_Binary_IO.f90
 			Coefficients/SpcCoeff/SpcCoeff_Define.f90
+			Coefficients/SpcCoeff/SpcCoeff_IO.f90
+			Coefficients/SpcCoeff/SpcCoeff_netCDF_IO.f90
 			Coefficients/TauCoeff/ODAS/ODAS_Binary_IO.f90
+			Coefficients/TauCoeff/ODAS/ODAS_netCDF_IO.f90
 			Coefficients/TauCoeff/ODAS/ODAS_Define.f90
 			Coefficients/TauCoeff/ODAS/ODAS_TauCoeff.f90
 			Coefficients/TauCoeff/ODPS/ODPS_Binary_IO.f90
+			Coefficients/TauCoeff/ODPS/ODPS_netCDF_IO.f90
 			Coefficients/TauCoeff/ODPS/ODPS_Define.f90
 			Coefficients/TauCoeff/ODPS/ODPS_TauCoeff.f90
 			Coefficients/TauCoeff/ODSSU/ODSSU_Binary_IO.f90
@@ -112,6 +129,7 @@ list( APPEND crtm_src_files
 			RTSolution/Common_RTSolution.f90
 			RTSolution/CRTM_RTSolution_Define.f90
 			RTSolution/CRTM_RTSolution.f90
+			RTSolution/CRTM_Active_Sensor.f90
 			RTSolution/Emission/Emission_Module.f90
 			RTSolution/RTV_Define.f90
 			RTSolution/SOI/SOI_Module.f90
@@ -131,6 +149,7 @@ list( APPEND crtm_src_files
 			SfcOptics/CRTM_VIS_Snow_SfcOptics.f90
 			SfcOptics/CRTM_VIS_Water_SfcOptics.f90
 			SfcOptics/IR_Water/IRSSEM/CRTM_IRSSEM.f90
+                        SfcOptics/IR_Snow/CRTM_IRSnowEM.f90
 			SfcOptics/MW_Water/FASTEM_MWSSEM/Azimuth_Emissivity_F6_Module.f90
 			SfcOptics/MW_Water/FASTEM_MWSSEM/Azimuth_Emissivity_Module.f90
 			SfcOptics/MW_Water/FASTEM_MWSSEM/CRTM_Fastem1.f90
@@ -177,6 +196,10 @@ list( APPEND crtm_src_files
 			Utility/Fundamental_Constants.f90
 			Utility/Hyperbolic_Step/Hyperbolic_Step.f90
 			Utility/Message_Handler.f90
+			Utility/netCDF/netCDF_Attribute_Utility.f90
+			Utility/netCDF/netCDF_Dimension_Utility.f90
+			Utility/netCDF/netCDF_Utility.f90
+			Utility/netCDF/netCDF_Variable_Utility.f90
 			Utility/Profile_Utility/Profile_Utility_Parameters.f90
 			Utility/Search_Utility/Search_Utility.f90
 			Utility/Sort_Utility/Sort_Utility.f90
@@ -187,11 +210,19 @@ list( APPEND crtm_src_files
 			Zeeman/Zeeman_Utility.f90
 )
 
-ecbuild_add_library(TARGET ${PROJECT_NAME} SOURCES ${${PROJECT_NAME}_src_files})
+if(((CMAKE_BUILD_TYPE STREQUAL "Debug") OR (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")) AND CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  SET_SOURCE_FILES_PROPERTIES(RTSolution/ADA/ADA_Module.f90 APPEND_STRING PROPERTY COMPILE_FLAGS " -check none -check bounds,pointers,uninit")
+endif()
 
-#Dependecies
+ecbuild_add_library(TARGET ${PROJECT_NAME} TYPE SHARED SOURCES ${${PROJECT_NAME}_src_files})
+ecbuild_add_library(TARGET ${PROJECT_NAME}_static TYPE STATIC SOURCES ${${PROJECT_NAME}_src_files})
+
+#Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran)
 target_link_libraries(${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran)
+
+target_link_libraries(${PROJECT_NAME}_static PUBLIC OpenMP::OpenMP_Fortran)
+target_link_libraries(${PROJECT_NAME}_static PUBLIC NetCDF::NetCDF_Fortran)
 
 #Fortran module output directory for build and install interfaces
 set(MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})

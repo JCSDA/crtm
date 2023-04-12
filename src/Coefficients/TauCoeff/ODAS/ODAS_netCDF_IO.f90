@@ -46,7 +46,7 @@ MODULE ODAS_netCDF_IO
   ! Module parameters
   ! -----------------
   ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = 'Placeholder'
   ! Numeric literals
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Keyword set value

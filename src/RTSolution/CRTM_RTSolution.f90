@@ -1066,19 +1066,21 @@ CONTAINS
 
     ! Determine the number of streams based on Mie parameter
     IF ( MieParameter < 0.01_fp ) THEN
-      nStreams = 2
+      ! 1. nStreams = the number of pcoeff terms used to reconstruct the phase function;
+      ! 2. AerosolCoeff and CloudCoeff LUTs Require at least 4 terms to properly
+      !    reconstruct the phase function and set up truncation factor.
+      nStreams = 4
+      RTSolution%n_full_Streams = 4
     ELSE IF( MieParameter < ONE ) THEN
       nStreams = 4
+      RTSolution%n_full_Streams = 6
     ELSE
       nStreams = 6
+      RTSolution%n_full_Streams = 8
     END IF
-
-! Hardcode number of streams for testing purposes
-!    nStreams = 6
 
     ! Set RTSolution scattering info
     RTSolution%Scattering_Flag = .TRUE.
-    RTSolution%n_full_Streams  = nStreams + 2
 
   END FUNCTION CRTM_Compute_nStreams
 END MODULE CRTM_RTSolution

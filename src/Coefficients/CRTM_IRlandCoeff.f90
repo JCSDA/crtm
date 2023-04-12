@@ -19,7 +19,9 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 19-Aug-2011
 !                       paul.vandelst@noaa.gov
-!
+!      Modified by:     Cheng Dang, 05-Mar-2022
+!                       dangch@ucar.edu
+!                       Add SEcategory_ReadFile_IO for netCDF I/O
 
 MODULE CRTM_IRlandCoeff
 
@@ -30,8 +32,8 @@ MODULE CRTM_IRlandCoeff
   USE Message_Handler  , ONLY: SUCCESS, FAILURE, Display_Message
   USE SEcategory_Define, ONLY: SEcategory_type, &
                                SEcategory_Associated, &
-                               SEcategory_Destroy, &
-                               SEcategory_ReadFile
+                               SEcategory_Destroy
+  USE SEcategory_IO,     ONLY: SEcategory_ReadFile_IO
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -80,6 +82,7 @@ CONTAINS
 !       Error_Status = CRTM_IRlandCoeff_Load( &
 !                        Filename,                              &
 !                        File_Path         = File_Path        , &
+!                        netCDF            = netCDF           , &
 !                        Quiet             = Quiet            , &
 !                        Process_ID        = Process_ID       , &
 !                        Output_Process_ID = Output_Process_ID  )
@@ -98,6 +101,15 @@ CONTAINS
 !                           directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       netCDF:             Set this logical argument to specify file format.
+!                           If == .FALSE., Binary [DEFAULT].
+!                              == .TRUE.,  netCDF
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -152,6 +164,7 @@ CONTAINS
   FUNCTION CRTM_IRlandCoeff_Load( &
     Filename         , &  ! Input
     File_Path        , &  ! Optional input
+    netCDF           , &  ! Optional input
     Quiet            , &  ! Optional input
     Process_ID       , &  ! Optional input
     Output_Process_ID) &  ! Optional input
@@ -159,6 +172,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: Filename
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
+    LOGICAL,      OPTIONAL, INTENT(IN) :: netCDF
     LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
@@ -170,6 +184,8 @@ CONTAINS
     CHARACTER(ML) :: msg, pid_msg
     CHARACTER(ML) :: IRlandCoeff_File
     LOGICAL :: noisy
+    ! Function variables
+    LOGICAL :: Binary
 
     ! Setup
     err_stat = SUCCESS
@@ -190,12 +206,16 @@ CONTAINS
     ELSE
       pid_msg = ''
     END IF
+    ! ...Check netCDF argument
+    Binary = .TRUE.
+    IF ( PRESENT(netCDF) ) Binary = .NOT. netCDF
 
 
     ! Read the IR land SEcategory file
-    err_stat = SEcategory_ReadFile( &
+    err_stat = SEcategory_ReadFile_IO( &
                  IRlandC, &
                  IRlandCoeff_File, &
+                 netCDF = .NOT. Binary, &
                  Quiet = .NOT. noisy )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading IRlandCoeff SEcategory file '//TRIM(IRlandCoeff_File)//TRIM(pid_msg)

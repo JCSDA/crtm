@@ -11,8 +11,8 @@ if [[ "$uname" == "Linux"  ]] ; then
 		export NC4_DIR=/usr/local/ #singularity container only
 		export HDF_DIR=/usr/local/ #singularity container only
 elif [[ "$uname" == "Darwin" ]] ; then
-		export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"  #mac OS, brew install
-		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"   #mac OS, brew install
+		export NC4_DIR="/usr/local/Cellar/netcdf/4.8.0_2"  #mac OS, brew install
+		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.1"   #mac OS, brew install
 fi
 
 #set the number of openmp threads

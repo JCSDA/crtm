@@ -109,6 +109,9 @@ MODULE CRTM_Tangent_Linear_Module
   USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature   , &
                                         CRTM_Planck_Temperature_TL
   USE CRTM_CloudCover_Define,     ONLY: CRTM_CloudCover_type
+  USE CRTM_Active_Sensor,         ONLY: CRTM_Compute_Reflectivity, &
+                                        CRTM_Compute_Reflectivity_TL, &
+                                        Calculate_Cloud_Water_Density
 
   ! Internal variable definition modules
   ! ...AtmOptics
@@ -381,6 +384,7 @@ CONTAINS
 
     ! Reinitialise the output RTSolution
     CALL CRTM_RTSolution_Zero(RTSolution)
+    CALL CRTM_RTSolution_Zero(RTSolution_TL)
 
 
     ! Allocate the profile independent surface optics local structure
@@ -399,7 +403,6 @@ CONTAINS
     ! PROFILE LOOP
     ! ------------
     Profile_Loop: DO m = 1, n_Profiles
-
 
       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
        IF ( Atmosphere(m)%n_Clouds > 0) then
@@ -511,6 +514,9 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
+      ! Calculate cloud water density
+      CALL Calculate_Cloud_Water_Density(Atm)
+       
       Error_Status = CRTM_Atmosphere_AddLayers_TL( Atmosphere(m), Atmosphere_TL(m), Atm_TL )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
@@ -518,6 +524,8 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
+      Atm_TL%Height = Atm%Height
+      
       ! ...Check the total number of Atm layers
       IF ( Atm%n_Layers > MAX_N_LAYERS .OR. Atm_TL%n_Layers > MAX_N_LAYERS) THEN
         Error_Status = FAILURE
@@ -578,7 +586,7 @@ CONTAINS
 
       ! Setup for fractional cloud coverage
       IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
-      
+
         ! Compute cloudcover
         Status_FWD = CloudCover%Compute_CloudCover(atm, Overlap = opt%Overlap_Id)
         Status_TL  = CloudCover_TL%Compute_CloudCover_TL(CloudCover, atm, atm_TL)
@@ -743,8 +751,12 @@ CONTAINS
 
           ! Determine the number of streams (n_Full_Streams) in up+downward directions
           IF ( Opt%Use_N_Streams ) THEN
-            n_Full_Streams = Opt%n_Streams
-            RTSolution(ln,m)%n_Full_Streams = n_Full_Streams + 2
+            ! 1. AtmOptics(nt)%n_Legendre_Terms = n_Full_Streams = the number of pcoeff
+            !    terms used to reconstruct the phase function;
+            ! 2. AerosolCoeff and CloudCoeff LUTs Require at least 4 terms to properly
+            !    reconstruct the phase function and set up truncation factor.
+            n_Full_Streams = max(4, Opt%n_Streams)
+            RTSolution(ln,m)%n_Full_Streams = max(4, Opt%n_Streams + 2)
             RTSolution(ln,m)%Scattering_Flag = .TRUE.
           ELSE
             n_Full_Streams = CRTM_Compute_nStreams( Atm             , &  ! Input
@@ -782,10 +794,8 @@ CONTAINS
           IF( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) .AND. RTV%Solar_Flag_true ) THEN
             RTV%Visible_Flag_true = .true.
             ! Rayleigh phase function has 0, 1, 2 components.
-            IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
-              AtmOptics%n_Legendre_Terms = 4
-              AtmOptics_TL%n_Legendre_Terms = AtmOptics%n_Legendre_Terms
-              RTSolution(ln,m)%Scattering_FLAG = .TRUE.
+            ! Make sure CRTM always use a minmum of 6 streams for visible calculation.
+            IF( AtmOptics%n_Legendre_Terms == 4 ) THEN
               RTSolution(ln,m)%n_Full_Streams = AtmOptics%n_Legendre_Terms + 2
             END IF
             RTV%n_Azi = MIN( AtmOptics%n_Legendre_Terms - 1, MAX_N_AZIMUTH_FOURIER )
@@ -837,6 +847,7 @@ CONTAINS
           ! Compute the cloud particle absorption/scattering properties
           IF( Atm%n_Clouds > 0 ) THEN
             Status_FWD = CRTM_Compute_CloudScatter( Atm         , &  ! Input
+                                                    GeometryInfo    , &  ! Input
                                                     SensorIndex , &  ! Input
                                                     ChannelIndex, &  ! Input
                                                     AtmOptics   , &  ! Output
@@ -844,6 +855,7 @@ CONTAINS
             Status_TL = CRTM_Compute_CloudScatter_TL( Atm         , &  ! FWD Input
                                                       AtmOptics   , &  ! FWD Input
                                                       Atm_TL      , &  ! TL  Input
+                                                      GeometryInfo, &  ! Input
                                                       SensorIndex , &  ! Input
                                                       ChannelIndex, &  ! Input
                                                       AtmOptics_TL, &  ! TL  Output
@@ -935,12 +947,14 @@ CONTAINS
             END IF
           END IF
 
+          IF( .NOT.RTSolution(ln,m)%Scattering_FLAG .OR. .NOT.AtmOptics%Include_Scattering ) RTV%n_Azi = 0
 
           ! Fourier component loop for azimuth angles (VIS).
           ! mth_Azi = 0 is for an azimuth-averaged value (IR, MW)
           ! ...Initialise radiance
-          RTSolution(ln,m)%Radiance = ZERO
-          RTSolution_TL(ln,m)%Radiance = ZERO
+!!$          RTSolution(ln,m)%Radiance = ZERO
+!!$          RTSolution_TL(ln,m)%Radiance = ZERO
+          CALL CRTM_RTSolution_Zero( RTSolution_TL(ln,m) )
           ! ...Fourier expansion over azimuth angle
           Azimuth_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
 
@@ -1064,8 +1078,8 @@ CONTAINS
 
           ! The radiance post-processing
           CALL Post_Process_RTSolution(RTSolution(ln,m), RTSolution_TL(ln,m))
-          
-          
+
+
           ! Perform clear-sky post-processing
           IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
             CALL Post_Process_RTSolution(RTSolution_Clear, RTSolution_Clear_TL)
@@ -1075,6 +1089,24 @@ CONTAINS
             RTSolution_TL(ln,m)%R_Clear  = RTSolution_Clear_TL%Radiance
             RTSolution_TL(ln,m)%Tb_Clear = RTSolution_Clear_TL%Brightness_Temperature
           END IF
+
+          ! Calculate reflectivity for active instruments
+          IF  ( SC(SensorIndex)%Is_Active_Sensor .AND. AtmOptics%Include_Scattering) THEN
+              CALL CRTM_Compute_Reflectivity(Atm             , & ! Input
+                                             AtmOptics       , & ! Input
+                                             GeometryInfo    , & ! Input
+                                             SensorIndex     , & ! Input
+                                             ChannelIndex    , & ! Input
+                                             RTSolution(ln,m))   ! Input/Output
+                                             
+              CALL CRTM_Compute_Reflectivity_TL(Atm                 , & ! Input
+                                                AtmOptics           , & ! Input
+                                                AtmOptics_TL        , & ! Input
+                                                GeometryInfo        , & ! Input
+                                                SensorIndex         , & ! Input
+                                                ChannelIndex        , & ! Input
+                                                RTSolution_TL(ln,m))    ! Input/Output
+          ENDIF
 
         END DO Channel_Loop
 
@@ -1102,7 +1134,7 @@ CONTAINS
     CALL AOvar_Destroy( AOvar )
     CALL CSvar_Destroy( CSvar )
     CALL ASvar_Destroy( ASvar )
-    CALL RTV_Destroy( RTV ) 
+    CALL RTV_Destroy( RTV )
 
 
   CONTAINS

@@ -1,4 +1,4 @@
-!
+
 ! AerosolCoeff_IO
 !
 ! Container module for Binary and netCDF AerosolCoeff I/O modules.
@@ -21,16 +21,16 @@ MODULE AerosolCoeff_IO
   USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, OPERATOR(==)
   USE AerosolCoeff_Binary_IO, ONLY: AerosolCoeff_Binary_InquireFile, &
                                     AerosolCoeff_Binary_ReadFile   , &
-                                    AerosolCoeff_Binary_WriteFile  
+                                    AerosolCoeff_Binary_WriteFile
                                     !AerosolCoeff_netCDF_IOVersion
   USE AerosolCoeff_netCDF_IO, ONLY: AerosolCoeff_netCDF_InquireFile, &
                                     AerosolCoeff_netCDF_ReadFile   , &
-                                    AerosolCoeff_netCDF_WriteFile  
+                                    AerosolCoeff_netCDF_WriteFile
                                     !AerosolCoeff_netCDF_IOVersion
   ! Disable implicit typing
   IMPLICIT NONE
-  
-  
+
+
   ! ------------
   ! Visibilities
   ! ------------
@@ -72,6 +72,7 @@ CONTAINS
 !                        n_Radii          = n_Radii         , &
 !                        n_Types          = n_Types         , &
 !                        n_RH             = n_RH            , &
+!                        n_RH_Radii       = n_RH_Radii      , &
 !                        n_Legendre_Terms = n_Legendre_Terms, &
 !                        n_Phase_Elements = n_Phase_Elements, &
 !                        Release          = Release         , &
@@ -83,8 +84,10 @@ CONTAINS
 ! INPUTS:
 !       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
 !                          Available aerosol scheme:
-!                          - GOCART  [DEFAULT]
+!                          - CRTM  [DEFAULT]
 !                          - CMAQ
+!                          - GOCART-GEOS5
+!                          - NAAPS
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -132,6 +135,14 @@ CONTAINS
 !
 !       n_RH:              The number of relative humidity entries in
 !                          the LUT. Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       n_RH_Radii:        The number of relative humidity entries in
+!                          the LUT.
+!                          used only for RH in CRTM and CMAQ tables. Must be > 0.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
@@ -201,7 +212,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION AerosolCoeff_InquireFile( & 
+  FUNCTION AerosolCoeff_InquireFile( &
     Aerosol_Model   , &  ! Input
     Filename        , &  ! Input
     netCDF          , &  ! Optional input
@@ -210,6 +221,7 @@ CONTAINS
     n_Sigma         , &  ! Optional output
     n_Types         , &  ! Optional output
     n_RH            , &  ! Optional output
+    n_RH_Radii      , &  ! Optional output
     n_Legendre_Terms, &  ! Optional output
     n_Phase_Elements, &  ! Optional output
     Release         , &  ! Optional output
@@ -222,18 +234,19 @@ CONTAINS
     CHARACTER(*),           INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),           INTENT(IN)  :: Filename
     LOGICAL,      OPTIONAL, INTENT(IN)  :: netCDF
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths       
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii             
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types             
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH                
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Release         
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Version         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH_Radii
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Release
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
     INTEGER :: err_stat
     ! Function variables
@@ -256,6 +269,7 @@ CONTAINS
                    n_Sigma          = n_Sigma         , &
                    n_Types          = n_Types         , &
                    n_RH             = n_RH            , &
+                   n_RH_Radii       = n_RH_Radii      , &
                    n_Legendre_Terms = n_Legendre_Terms, &
                    n_Phase_Elements = n_Phase_Elements, &
                    Release          = Release         , &
@@ -269,6 +283,7 @@ CONTAINS
                    n_Sigma          = n_Sigma         , &
                    n_Types          = n_Types         , &
                    n_RH             = n_RH            , &
+                   n_RH_Radii       = n_RH_Radii      , &
                    n_Legendre_Terms = n_Legendre_Terms, &
                    n_Phase_Elements = n_Phase_Elements, &
                    Release          = Release         , &
@@ -292,8 +307,8 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_ReadFile( &
-!                        Aerosol_Model, &
-!                        Filename         , &
+!                        Aerosol_Model      , &
+!                        Filename           , &
 !                        AerosolCoeff       , &
 !                        netCDF  = netCDF , &
 !                        Quiet   = Quiet  , &
@@ -304,8 +319,10 @@ CONTAINS
 ! INPUTS:
 !       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
 !                          Available aerosol scheme:
-!                          - GOCART  [DEFAULT]
+!                          - CRTM  [DEFAULT]
 !                          - CMAQ
+!                          - GOCART-GEOS5
+!                          - NAAPS
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -460,8 +477,10 @@ CONTAINS
 ! INPUTS:
 !       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
 !                          Available aerosol scheme:
-!                          - GOCART  [DEFAULT]
+!                          - CRTM  [DEFAULT]
 !                          - CMAQ
+!                          - GOCART-GEOS5
+!                          - NAAPS
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -668,7 +687,7 @@ CONTAINS
     ! Function variables
     CHARACTER(256) :: msg
     TYPE(AerosolCoeff_type) :: cc, cc_copy
-    
+
     ! Set up
     err_stat = SUCCESS
 

@@ -10,6 +10,11 @@
 !                       Quanhua Liu,    quanhua.liu@noaa.gov
 !                       Paul van Delst, paul.vandelst@noaa.gov
 !                       20-Feb-2004
+!              
+!      Modified by:    Isaac Moradi     isaac.moradi@nasa.gov
+!                      24-Sept-2021
+!                      Several new variables were added to later simpify the interpolation
+!                      of cloud optical properties
 !
 
 MODULE CRTM_Cloud_Define
@@ -40,15 +45,50 @@ MODULE CRTM_Cloud_Define
   ! Everything private by default
   PRIVATE
   ! Cloud Parameters
-  PUBLIC :: N_VALID_CLOUD_CATEGORIES
-  PUBLIC :: INVALID_CLOUD
-  PUBLIC ::   WATER_CLOUD
-  PUBLIC ::     ICE_CLOUD
-  PUBLIC ::    RAIN_CLOUD
-  PUBLIC ::    SNOW_CLOUD
-  PUBLIC :: GRAUPEL_CLOUD
-  PUBLIC ::    HAIL_CLOUD
   PUBLIC :: CLOUD_CATEGORY_NAME
+  PUBLIC :: N_VALID_CLOUD_CATEGORIES
+  PUBLIC :: INVALID_CLOUD                !   0
+  PUBLIC :: WATER_CLOUD                  ! -99
+  PUBLIC :: RAIN_CLOUD                   ! -99
+  PUBLIC :: ICE_CLOUD                    !  
+  PUBLIC :: SNOW_CLOUD                   !
+  PUBLIC :: GRAUPEL_CLOUD                !
+  PUBLIC :: HAIL_CLOUD                   !
+  PUBLIC :: PlateType1                   ! 1
+  PUBLIC :: ColumnType1                  ! 2
+  PUBLIC :: SixBulletRosette             ! 3
+  PUBLIC :: Perpendicular4_BulletRosette ! 4
+  PUBLIC :: Flat3_BulletRosette          ! 5
+  PUBLIC :: IconCloudIce                 ! 6
+  PUBLIC :: SectorSnowflake              ! 7
+  PUBLIC :: EvansSnowAggregate           ! 8
+  PUBLIC :: EightColumnAggregate         ! 9
+  PUBLIC :: LargePlateAggregate          ! 10
+  PUBLIC :: LargeColumnAggregate         ! 11
+  PUBLIC :: LargeBlockAggregate          ! 12
+  PUBLIC :: IconSnow                     ! 13
+  PUBLIC :: IconHail                     ! 14
+  PUBLIC :: GemGraupel                   ! 15
+  PUBLIC :: GemSnow                      ! 16
+  PUBLIC :: GemHail                      ! 17
+  PUBLIC :: IceSphere                    ! 18    
+  PUBLIC :: LiquidSphere                 ! 19
+                        
+  
+  ! Cloud Lists used for simplifying the interpoaltion
+  PUBLIC :: CLOUD_TYPE_MIE_TAMU
+  PUBLIC :: CLOUD_INDEX_MIE_TAMU 
+  PUBLIC :: CLOUD_STATE_MIE_TAMU
+  PUBLIC :: CLOUD_TYPE_DDA_ARTS
+  PUBLIC :: CLOUD_INDEX_DDA_ARTS
+  PUBLIC :: CLOUD_STATE_DDA_ARTS 
+  
+  PUBLIC :: N_VALID_CLOUDS_MIE_TAMU
+  PUBLIC :: N_VALID_CLOUDS_DDA_ARTS
+  
+  PUBLIC :: LIQUID
+  PUBLIC :: FROZEN
+  
   ! Datatypes
   PUBLIC :: CRTM_Cloud_type
   ! Operators
@@ -104,7 +144,8 @@ MODULE CRTM_Cloud_Define
   ! Module parameters
   ! -----------------
   ! The valid cloud categories and names
-  INTEGER, PARAMETER :: N_VALID_CLOUD_CATEGORIES = 6
+  INTEGER, PARAMETER :: N_VALID_CLOUD_CATEGORIES = 6 + 19 ! This is the max cloud cat
+  INTEGER, PARAMETER :: N_DEFAULT_CLOUDS = 6
   INTEGER, PARAMETER :: INVALID_CLOUD = 0
   INTEGER, PARAMETER ::   WATER_CLOUD = 1
   INTEGER, PARAMETER ::     ICE_CLOUD = 2
@@ -112,6 +153,28 @@ MODULE CRTM_Cloud_Define
   INTEGER, PARAMETER ::    SNOW_CLOUD = 4
   INTEGER, PARAMETER :: GRAUPEL_CLOUD = 5
   INTEGER, PARAMETER ::    HAIL_CLOUD = 6
+  ! Non default Chalmers DDA clouds - need to be specified by name
+  ! The number actually shows the index for cloud type in the CloudCoef file
+  INTEGER, PARAMETER :: PlateType1                    = N_DEFAULT_CLOUDS + 1  ! 1
+  INTEGER, PARAMETER :: ColumnType1                   = N_DEFAULT_CLOUDS + 2  ! 2
+  INTEGER, PARAMETER :: SixBulletRosette              = N_DEFAULT_CLOUDS + 3  ! 3
+  INTEGER, PARAMETER :: Perpendicular4_BulletRosette  = N_DEFAULT_CLOUDS + 4  ! 4
+  INTEGER, PARAMETER :: Flat3_BulletRosette           = N_DEFAULT_CLOUDS + 5  ! 5
+  INTEGER, PARAMETER :: IconCloudIce                  = N_DEFAULT_CLOUDS + 6  ! 6
+  INTEGER, PARAMETER :: SectorSnowflake               = N_DEFAULT_CLOUDS + 7  ! 7
+  INTEGER, PARAMETER :: EvansSnowAggregate            = N_DEFAULT_CLOUDS + 8  ! 8
+  INTEGER, PARAMETER :: EightColumnAggregate          = N_DEFAULT_CLOUDS + 9  ! 9
+  INTEGER, PARAMETER :: LargePlateAggregate           = N_DEFAULT_CLOUDS + 10 ! 10
+  INTEGER, PARAMETER :: LargeColumnAggregate          = N_DEFAULT_CLOUDS + 11 ! 11
+  INTEGER, PARAMETER :: LargeBlockAggregate           = N_DEFAULT_CLOUDS + 12 ! 12
+  INTEGER, PARAMETER :: IconSnow                      = N_DEFAULT_CLOUDS + 13 ! 13
+  INTEGER, PARAMETER :: IconHail                      = N_DEFAULT_CLOUDS + 14 ! 14
+  INTEGER, PARAMETER :: GemGraupel                    = N_DEFAULT_CLOUDS + 15 ! 15
+  INTEGER, PARAMETER :: GemSnow                       = N_DEFAULT_CLOUDS + 16 ! 16
+  INTEGER, PARAMETER :: GemHail                       = N_DEFAULT_CLOUDS + 17 ! 17
+  INTEGER, PARAMETER :: IceSphere                     = N_DEFAULT_CLOUDS + 18 ! 18    
+  INTEGER, PARAMETER :: LiquidSphere                  = N_DEFAULT_CLOUDS + 19 ! 19
+  
   INTEGER, PARAMETER :: CLOUD_CATEGORY_LIST(0:N_VALID_CLOUD_CATEGORIES) = &
     [ INVALID_CLOUD, &
         WATER_CLOUD, &
@@ -119,15 +182,103 @@ MODULE CRTM_Cloud_Define
          RAIN_CLOUD, &
          SNOW_CLOUD, &
       GRAUPEL_CLOUD, &
-         HAIL_CLOUD  ]
+         HAIL_CLOUD, &
+          ICE_CLOUD, &
+          ICE_CLOUD, &                                      
+          ICE_CLOUD, &                                     
+          ICE_CLOUD, &                                      
+          ICE_CLOUD, &                                     
+          ICE_CLOUD, &                                     
+         SNOW_CLOUD, &                                     
+         SNOW_CLOUD, &                                     
+          ICE_CLOUD, &                                      
+          ICE_CLOUD, &                                     
+          ICE_CLOUD, &                                      
+          ICE_CLOUD, &                                     
+         SNOW_CLOUD, &                                      
+         HAIL_CLOUD, &                                      
+      GRAUPEL_CLOUD, &                                      
+         SNOW_CLOUD, &                                      
+         HAIL_CLOUD, &                                      
+          ICE_CLOUD, &                                      
+        WATER_CLOUD  &
+         ]
   CHARACTER(*), PARAMETER :: CLOUD_CATEGORY_NAME(0:N_VALID_CLOUD_CATEGORIES) = &
-    [ 'Invalid', &
-      'Water  ', &
-      'Ice    ', &
-      'Rain   ', &
-      'Snow   ', &
-      'Graupel', &
-      'Hail   '  ]
+    [ 'Invalid                     ', &
+      'Water                       ', &
+      'Ice                         ', &
+      'Rain                        ', &
+      'Snow                        ', &
+      'Graupel                     ', &
+      'Hail                        ', &
+      'PlateType1                  ', &
+      'ColumnType1                 ', &
+      'SixBulletRosette            ', &
+      'Perpendicular4_BulletRosette', &
+      'Flat3_BulletRosette         ', &
+      'IconCloudIce                ', &
+      'SectorSnowflake             ', &
+      'EvansSnowAggregate          ', &
+      'EightColumnAggregate        ', &
+      'LargePlateAggregate         ', &
+      'LargeColumnAggregate        ', &
+      'LargeBlockAggregate         ', &
+      'IconSnow                    ', &
+      'IconHail                    ', &
+      'GemGraupel                  ', &
+      'GemSnow                     ', &
+      'GemHail                     ', &
+      'IceSphere                   ', &   
+      'LiquidSphere                '  & 
+      ]
+
+  ! Clouds type, status, and index in the  cloud coefficients
+  ! Added to simplify and clean the interpolation of cloud optical properties
+  ! Isaac Moradi, Sept-24-2021
+  INTEGER, PARAMETER :: LIQUID = 0
+  INTEGER, PARAMETER :: FROZEN = 1
+  INTEGER, PARAMETER :: N_VALID_CLOUDS_MIE_TAMU = 6
+  INTEGER, PARAMETER :: N_VALID_CLOUDS_DDA_ARTS = N_DEFAULT_CLOUDS + 19 ! 6 default plus 19 DDA
+
+  INTEGER, PARAMETER :: CLOUD_TYPE_MIE_TAMU(0:N_VALID_CLOUDS_MIE_TAMU) = &
+       [INVALID_CLOUD, WATER_CLOUD, RAIN_CLOUD, SNOW_CLOUD, GRAUPEL_CLOUD, ICE_CLOUD, HAIL_CLOUD ]
+
+  INTEGER, PARAMETER :: CLOUD_INDEX_MIE_TAMU(0:N_VALID_CLOUDS_MIE_TAMU) = &
+    [ 0, -99, -99, 1, 2, 3, 3 ]
+    
+  INTEGER, PARAMETER ::  CLOUD_STATE_MIE_TAMU(0:N_VALID_CLOUDS_MIE_TAMU) = &
+    [ INVALID_CLOUD, LIQUID, LIQUID, FROZEN, FROZEN, FROZEN, FROZEN ]
+  
+  INTEGER, PARAMETER :: CLOUD_TYPE_DDA_ARTS(0:N_VALID_CLOUDS_DDA_ARTS) =   &
+       [INVALID_CLOUD,                                                             &
+        !  Default clouds
+        WATER_CLOUD, RAIN_CLOUD, SNOW_CLOUD, GRAUPEL_CLOUD, ICE_CLOUD, HAIL_CLOUD, &
+        ! Non-default from the Chalmers DDA
+        PlateType1, ColumnType1, SixBulletRosette, Perpendicular4_BulletRosette,   &
+        Flat3_BulletRosette, IconCloudIce, SectorSnowflake, EvansSnowAggregate,    &
+        EightColumnAggregate, LargePlateAggregate, LargeColumnAggregate,           &
+        LargeBlockAggregate, IconSnow, IconHail, GemGraupel, GemSnow, GemHail,     &
+        IceSphere, LiquidSphere]
+
+  ! Indices of different clouds in  the CloudCoef solid phase (*_S_*) parameters
+  INTEGER, PARAMETER :: CLOUD_INDEX_DDA_ARTS(0:N_VALID_CLOUDS_DDA_ARTS) = &
+    [ 0, &
+    ! Default clouds - Note that GemSnow, GemGraupel, IceSphere, and GemHail are used 
+    ! for default and once can change the defaults by changing the faollowing line
+    -99, -99, 7, 15, 18, 17, &
+    ! Non default clouds
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, -99 ]
+    
+  INTEGER, PARAMETER ::  CLOUD_STATE_DDA_ARTS(0:N_VALID_CLOUDS_DDA_ARTS) = &
+    [ INVALID_CLOUD, &
+      ! Default clouds
+      LIQUID, LIQUID, FROZEN, FROZEN, FROZEN, FROZEN, &
+      ! DDA
+      FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, &
+      FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, &
+      FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, FROZEN, &
+      LIQUID]
+  
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -155,6 +306,7 @@ MODULE CRTM_Cloud_Define
     REAL(fp), ALLOCATABLE :: Effective_Radius(:)   ! K. Units are microns
     REAL(fp), ALLOCATABLE :: Effective_Variance(:) ! K. Units are microns^2
     REAL(fp), ALLOCATABLE :: Water_Content(:)      ! K. Units are kg/m^2
+    REAL(fp), ALLOCATABLE :: Water_Density(:)      ! K. Units are kg/m^3
   END TYPE CRTM_Cloud_type
   !:tdoc-:
 
@@ -316,6 +468,7 @@ CONTAINS
     ALLOCATE( Cloud%Effective_Radius( n_Layers ), &
               Cloud%Effective_Variance( n_Layers ), &
               Cloud%Water_Content( n_Layers ), &
+              Cloud%Water_Density( n_Layers ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
@@ -327,7 +480,7 @@ CONTAINS
     Cloud%Effective_Radius   = ZERO
     Cloud%Effective_Variance = ZERO
     Cloud%Water_Content      = ZERO
-
+    Cloud%Water_Density      = ZERO
     ! Set allocation indicator
     Cloud%Is_Allocated = .TRUE.
 
@@ -403,6 +556,7 @@ CONTAINS
     cld_out%Effective_Radius(na+1:nt)   = cld%Effective_Radius(1:no)
     cld_out%Effective_Variance(na+1:nt) = cld%Effective_Variance(1:no)
     cld_out%Water_Content(na+1:nt)      = cld%Water_Content(1:no)
+    cld_out%Water_Density(na+1:nt)      = cld%Water_Density(1:no)
 
   END FUNCTION CRTM_Cloud_AddLayerCopy
 
@@ -442,6 +596,7 @@ CONTAINS
     Cloud%Effective_Radius   = ZERO
     Cloud%Effective_Variance = ZERO
     Cloud%Water_Content      = ZERO
+    Cloud%Water_Density      = ZERO
   END SUBROUTINE CRTM_Cloud_Zero
 
 
@@ -530,7 +685,12 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
     ENDIF
-
+    IF ( ANY(Cloud%Water_Density < ZERO ) ) THEN
+      msg = 'Negative cloud water density found'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    
   END FUNCTION CRTM_Cloud_IsValid
 
 
@@ -587,6 +747,7 @@ CONTAINS
     WRITE(fid,'(5(1x,es22.15,:))') Cloud%Effective_Radius
     WRITE(fid,'(3x,"Water content:")')
     WRITE(fid,'(5(1x,es22.15,:))') Cloud%Water_Content
+    WRITE(fid,'(5(1x,es22.15,:))') Cloud%Water_Density
   END SUBROUTINE Scalar_Inspect
 
   SUBROUTINE Rank1_Inspect( Cloud, Unit )
@@ -686,7 +847,8 @@ CONTAINS
     IF ( CRTM_Cloud_Associated(x) .AND. CRTM_Cloud_Associated(y) ) THEN
       IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius  ,y%Effective_Radius  ,n))) .OR. &
            (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Variance,y%Effective_Variance,n))) .OR. &
-           (.NOT. ALL(Compares_Within_Tolerance(x%Water_Content     ,y%Water_Content     ,n))) ) RETURN
+           (.NOT. ALL(Compares_Within_Tolerance(x%Water_Density     ,y%Water_Density     ,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Water_Content     ,y%Water_Content     ,n)))) RETURN
     END IF
 
     ! If we get here, the objects are comparable
@@ -1293,7 +1455,8 @@ CONTAINS
       n = x%n_Layers
       IF ( .NOT. (ALL(x%Effective_Radius(1:n)   .EqualTo. y%Effective_Radius(1:n)  ) .AND. &
                   ALL(x%Effective_Variance(1:n) .EqualTo. y%Effective_Variance(1:n)) .AND. &
-                  ALL(x%Water_Content(1:n)      .EqualTo. y%Water_Content(1:n)     )) ) RETURN
+                  ALL(x%Water_Density(1:n)      .EqualTo. y%Water_Density(1:n)     ) .AND. &
+                  ALL(x%Water_Content(1:n)      .EqualTo. y%Water_Content(1:n)     ))) RETURN
     END IF
     
     ! If we get here, then...
@@ -1399,6 +1562,7 @@ CONTAINS
     cldsum%Effective_Radius(1:n)   = cldsum%Effective_Radius(1:n)   + cld2%Effective_Radius(1:n)
     cldsum%Effective_Variance(1:n) = cldsum%Effective_Variance(1:n) + cld2%Effective_Variance(1:n)
     cldsum%Water_Content(1:n)      = cldsum%Water_Content(1:n)      + cld2%Water_Content(1:n)
+    cldsum%Water_Density(1:n)      = cldsum%Water_Density(1:n)      + cld2%Water_Density(1:n)
 
   END FUNCTION CRTM_Cloud_Add
 

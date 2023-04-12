@@ -8,6 +8,10 @@
 !       Written by:     Paul van Delst, 11-Oct-2011
 !                       paul.vandelst@noaa.gov
 !
+!       Modified by:    Isaac Moradi, 11-Nov-2021
+!                       isaac.moradi@nasa.gov
+!                       Modifications to include back scattering information
+!
 
 MODULE CRTM_AtmOptics_Define
 
@@ -112,6 +116,7 @@ MODULE CRTM_AtmOptics_Define
     REAL(fp), ALLOCATABLE :: Optical_Depth(:)         ! K-Max
     REAL(fp), ALLOCATABLE :: Single_Scatter_Albedo(:) ! K-Max
     REAL(fp), ALLOCATABLE :: Asymmetry_Factor(:)      ! K-Max
+    REAL(fp), ALLOCATABLE :: Backscat_Coefficient(:)  ! K-Max
     REAL(fp), ALLOCATABLE :: Delta_Truncation(:)      ! K-Max
     REAL(fp), ALLOCATABLE :: Phase_Coefficient(:,:,:) ! 0:Ic-Max x Ip-Max x K-Max
   END TYPE CRTM_AtmOptics_type
@@ -300,6 +305,7 @@ CONTAINS
       ALLOCATE( self%Optical_Depth( n_Layers ), &
                 self%Single_Scatter_Albedo( n_Layers ), &
                 self%Asymmetry_Factor( n_Layers ), &
+                self%Backscat_Coefficient( n_Layers ), &
                 self%Delta_Truncation( n_Layers ), &
                 self%Phase_Coefficient( 0:n_Legendre_Terms, n_Phase_Elements, n_Layers ), &
                 STAT = alloc_stat )
@@ -345,6 +351,7 @@ CONTAINS
     self%Optical_Depth         = ZERO
     self%Single_Scatter_Albedo = ZERO
     self%Asymmetry_Factor      = ZERO
+    self%Backscat_Coefficient  = ZERO
     self%Delta_Truncation      = ZERO
     self%Phase_Coefficient     = ZERO
   END SUBROUTINE CRTM_AtmOptics_Zero
@@ -391,9 +398,11 @@ CONTAINS
     WRITE(*,'(5(1x,es22.15,:))') self%Single_Scatter_Albedo(1:self%n_Layers)
     WRITE(*,'(3x,"Asymmetry_Factor :")')
     WRITE(*,'(5(1x,es22.15,:))') self%Asymmetry_Factor(1:self%n_Layers)
+    WRITE(*,'(3x,"Backscat_Coefficient Backscattering coefficient :")') 
+    WRITE(*,'(5(1x,es22.15,:))') self%Backscat_Coefficient(1:self%n_Layers) 
     WRITE(*,'(3x,"Delta_Truncation :")')
     WRITE(*,'(5(1x,es22.15,:))') self%Delta_Truncation(1:self%n_Layers)
-    WRITE(*,'(3x,"Phase_Coefficient Legendre polynomial coefficients :")')
+    WRITE(*,'(3x,"Phase_Coefficient Legendre polynomial coefficients :")')  
     DO k = 1, self%n_Layers
       DO ip = 1, self%n_Phase_Elements
         WRITE(*,'(5x,"Layer: ",i0,"; Phase element: ",i0)') k, ip
@@ -625,6 +634,10 @@ CONTAINS
          (.NOT. ALL(Compares_Within_Tolerance( &
                       x%Asymmetry_Factor(1:k), &
                       y%Asymmetry_Factor(1:k), &
+                      n                      ))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance( &
+                      x%Backscat_Coefficient(1:k), &
+                      y%Backscat_Coefficient(1:k), &
                       n                      ))) .OR. &
          (.NOT. ALL(Compares_Within_Tolerance( &
                       x%Delta_Truncation(1:k), &
@@ -1020,6 +1033,7 @@ CONTAINS
         AtmOptics(n)%Optical_Depth        , &
         AtmOptics(n)%Single_Scatter_Albedo, &
         AtmOptics(n)%Asymmetry_Factor     , &
+        AtmOptics(n)%Backscat_Coefficient , &
         AtmOptics(n)%Delta_Truncation
       IF ( io_stat /= 0 ) THEN
         msg = 'Error reading profile data '//TRIM(count_msg)//' from '//&
@@ -1275,6 +1289,7 @@ CONTAINS
         AtmOptics(n)%Optical_Depth(1:AtmOptics(n)%n_Layers)        , &
         AtmOptics(n)%Single_Scatter_Albedo(1:AtmOptics(n)%n_Layers), &
         AtmOptics(n)%Asymmetry_Factor(1:AtmOptics(n)%n_Layers)     , &
+        AtmOptics(n)%Backscat_Coefficient(1:AtmOptics(n)%n_Layers)     , &
         AtmOptics(n)%Delta_Truncation(1:AtmOptics(n)%n_Layers)
       IF ( io_stat /= 0 ) THEN
         msg = 'Error writing profile data '//TRIM(count_msg)//' to '//&
@@ -1398,6 +1413,7 @@ CONTAINS
       IF ( .NOT. (ALL(x%Optical_Depth(1:k)         .EqualTo. y%Optical_Depth(1:k)        ) .AND. &
                   ALL(x%Single_Scatter_Albedo(1:k) .EqualTo. y%Single_Scatter_Albedo(1:k)) .AND. &
                   ALL(x%Asymmetry_Factor(1:k)      .EqualTo. y%Asymmetry_Factor(1:k)     ) .AND. &
+                  ALL(x%Backscat_Coefficient(1:k)  .EqualTo. y%Backscat_Coefficient(1:k) ) .AND. &
                   ALL(x%Delta_Truncation(1:k)      .EqualTo. y%Delta_Truncation(1:k)     ) .AND. &
                   ALL(x%Phase_Coefficient(0:ic, 1:ip, 1:k) .EqualTo. &
                       y%Phase_Coefficient(0:ic, 1:ip, 1:k))) ) RETURN
@@ -1469,6 +1485,7 @@ CONTAINS
     aosum%Optical_Depth(1:k)               = aosum%Optical_Depth(1:k)               + ao2%Optical_Depth(1:k)
     aosum%Single_Scatter_Albedo(1:k)       = aosum%Single_Scatter_Albedo(1:k)       + ao2%Single_Scatter_Albedo(1:k)
     aosum%Asymmetry_Factor(1:k)            = aosum%Asymmetry_Factor(1:k)            + ao2%Asymmetry_Factor(1:k)
+    aosum%Backscat_Coefficient(1:k)        = aosum%Backscat_Coefficient(1:k)        + ao2%Backscat_Coefficient(1:k)
     aosum%Delta_Truncation(1:k)            = aosum%Delta_Truncation(1:k)            + ao2%Delta_Truncation(1:k)
     aosum%Phase_Coefficient(0:ic,1:ip,1:k) = aosum%Phase_Coefficient(0:ic,1:ip,1:k) + ao2%Phase_Coefficient(0:ic,1:ip,1:k)
 
@@ -1534,6 +1551,7 @@ CONTAINS
     aodiff%Optical_Depth(1:k)               = aodiff%Optical_Depth(1:k)               - ao2%Optical_Depth(1:k)
     aodiff%Single_Scatter_Albedo(1:k)       = aodiff%Single_Scatter_Albedo(1:k)       - ao2%Single_Scatter_Albedo(1:k)
     aodiff%Asymmetry_Factor(1:k)            = aodiff%Asymmetry_Factor(1:k)            - ao2%Asymmetry_Factor(1:k)
+    aodiff%Backscat_Coefficient(1:k)        = aodiff%Backscat_Coefficient(1:k)        - ao2%Backscat_Coefficient(1:k)
     aodiff%Delta_Truncation(1:k)            = aodiff%Delta_Truncation(1:k)            - ao2%Delta_Truncation(1:k)
     aodiff%Phase_Coefficient(0:ic,1:ip,1:k) = aodiff%Phase_Coefficient(0:ic,1:ip,1:k) - ao2%Phase_Coefficient(0:ic,1:ip,1:k)
 

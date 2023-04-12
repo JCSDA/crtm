@@ -56,13 +56,13 @@ MODULE LBLRTM_Layer_IO
   ! Procedures
   PUBLIC :: LBLRTM_Layer_Read
   PUBLIC :: LBLRTM_Layer_Write
-  PUBLIC :: LBLRTM_Layer_IOVersion
+  !PUBLIC :: LBLRTM_Layer_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -578,9 +578,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Layer_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Layer_IOVersion
+  !SUBROUTINE LBLRTM_Layer_IOVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Layer_IOVersion
 
 END MODULE LBLRTM_Layer_IO

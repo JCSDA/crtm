@@ -145,7 +145,9 @@ case ${FILE_TYPE} in
 esac
 # ...Define the sensor independent coefficient files.
 COMMON_COEFF_FILES="AerosolCoeff.${FILE_EXT} \
-AerosolCoeff.CMAQ.${FILE_EXT}
+AerosolCoeff.CMAQ.${FILE_EXT} \
+AerosolCoeff.GOCART-GEOS5.${FILE_EXT} \
+AerosolCoeff.NAAPS.${FILE_EXT} \
 IR.CloudCoeff.${FILE_EXT} \
 MW.CloudCoeff.${FILE_EXT} \
 CloudCoeff.${FILE_EXT} \
@@ -154,9 +156,11 @@ FASTEM5.MWwater.EmisCoeff.${FILE_EXT} \
 FASTEM6.MWwater.EmisCoeff.${FILE_EXT} \
 Nalli.IRwater.EmisCoeff.${FILE_EXT} \
 WuSmith.IRwater.EmisCoeff.${FILE_EXT} \
+Nalli2.IRwater.EmisCoeff.${FILE_EXT} \
 NPOESS.IRice.EmisCoeff.${FILE_EXT} \
 NPOESS.IRland.EmisCoeff.${FILE_EXT} \
 NPOESS.IRsnow.EmisCoeff.${FILE_EXT} \
+Nalli.IRsnow.EmisCoeff.${FILE_EXT} \
 NPOESS.VISice.EmisCoeff.${FILE_EXT} \
 NPOESS.VISland.EmisCoeff.${FILE_EXT} \
 NPOESS.VISsnow.EmisCoeff.${FILE_EXT} \

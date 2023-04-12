@@ -18,12 +18,12 @@ MODULE LBLRTM_netCDF_IO
   USE Type_Kinds           , ONLY: FP, IP, DP => Double
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE LBLRTM_File_Define   , ONLY: LBLRTM_File_type
-  USE LBLRTM_File_IO       , ONLY: LBLRTM_File_Read, &
-                                   LBLRTM_File_IOVersion
+  USE LBLRTM_File_IO       , ONLY: LBLRTM_File_Read!, &
+                                   !LBLRTM_File_IOVersion
   USE LBLRTM_File_netCDF_IO, ONLY: LBLRTM_netCDF_InquireFile => LBLRTM_File_netCDF_Inquire  , &
                                    LBLRTM_netCDF_WriteFile   => LBLRTM_File_netCDF_Write    , &
-                                   LBLRTM_netCDF_ReadFile    => LBLRTM_File_netCDF_Read     , &
-                                   LBLRTM_netCDF_IOVersion   => LBLRTM_File_netCDF_IOVersion
+                                   LBLRTM_netCDF_ReadFile    => LBLRTM_File_netCDF_Read     !, &
+!                                   LBLRTM_netCDF_IOVersion   => LBLRTM_File_netCDF_IOVersion
   USE netcdf
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -36,14 +36,14 @@ MODULE LBLRTM_netCDF_IO
   PUBLIC :: LBLRTM_netCDF_InquireFile
   PUBLIC :: LBLRTM_netCDF_WriteFile
   PUBLIC :: LBLRTM_netCDF_ReadFile
-  PUBLIC :: LBLRTM_netCDF_IOVersion
+  !PUBLIC :: LBLRTM_netCDF_IOVersion
   PUBLIC :: LBLRTM_netCDF_ConvertFile
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = 'Dummy'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
 

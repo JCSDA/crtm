@@ -13,7 +13,9 @@
 !       Modified by     Yingtao Ma, 2020/6/11
 !                       yingtao.ma@noaa.gov
 !                       Implemented CMAQ aerosol
-!
+!       Modified by     Cheng Dang, 30-Mar-2022
+!                       dangch@ucar.edu
+!                       Add dimension n_RH_Radii, update AEROSOLCOEFF_RELEASE
 
 MODULE AerosolCoeff_Define
 
@@ -70,9 +72,7 @@ MODULE AerosolCoeff_Define
   ! Module parameters
   ! -----------------
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: AEROSOLCOEFF_RELEASE        = 3  ! This determines structure and file formats.
-  !INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION_GOCART =  #currently use version# >0 for GOCART
-  !INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION_CMAQ   =  #currently use version# <0 for CMAQ
+  INTEGER, PARAMETER :: AEROSOLCOEFF_RELEASE        = 4  ! This determines structure and file formats.
 
   ! Invalid aerosol type ID
   INTEGER, PARAMETER :: AerosolCoeff_INVALID_AEROSOL = 0
@@ -103,6 +103,7 @@ MODULE AerosolCoeff_Define
     INTEGER(Long) :: n_Sigma            = 0   ! I2.1 dimension
     INTEGER(Long) :: n_Types            = 0   ! I3 dimension
     INTEGER(Long) :: n_RH               = 0   ! I4 dimension
+    INTEGER(Long) :: n_RH_Radii         = 0   ! Only used for RH in CMAQ and CRTM LUTs
     INTEGER(Long) :: Max_Legendre_Terms = 0   ! I5 dimension
     INTEGER(Long) :: n_Legendre_Terms   = 0
     INTEGER(Long) :: Max_Phase_Elements = 0   ! I6 dimension
@@ -113,13 +114,13 @@ MODULE AerosolCoeff_Define
     REAL(Double),  ALLOCATABLE :: Wavelength(:)      ! I1
     REAL(Double),  ALLOCATABLE :: Frequency(:)       ! I1
     REAL(Double),  ALLOCATABLE :: Reff(:,:)          ! I2 x I3
-    REAL(Double),  ALLOCATABLE :: Rsig(:,:)          ! I2.1 x I3                         !if n_Sigma=0, I2.1=1
+    REAL(Double),  ALLOCATABLE :: Rsig(:,:)          ! I2.1 x I3
     REAL(Double),  ALLOCATABLE :: RH(:)              ! I4
-    ! LUT data                                                                           !if n_Sigma=0, I2.1=1
-    REAL(Double),  ALLOCATABLE :: ke(:,:,:,:)          ! I1 x I2 x I2.1 x I3             !if n_Sigma=0, I2.1=1
-    REAL(Double),  ALLOCATABLE :: w(:,:,:,:)           ! I1 x I2 x I2.1 x I3             !if n_Sigma=0, I2.1=1
-    REAL(Double),  ALLOCATABLE :: g(:,:,:,:)           ! I1 x I2 x I2.1 x I3             !if n_Sigma=0, I2.1=1
-    REAL(Double),  ALLOCATABLE :: pcoeff(:,:,:,:,:,:)  ! I1 x I2 x I2.1 x I3 x I5 x I6   !if n_Sigma=0, I2.1=1
+    ! LUT data
+    REAL(Double),  ALLOCATABLE :: ke(:,:,:,:,:)          ! I1 x I4 x I2 x I2.1 x I3
+    REAL(Double),  ALLOCATABLE :: w(:,:,:,:,:)           ! I1 x I4 x I2 x I2.1 x I3
+    REAL(Double),  ALLOCATABLE :: g(:,:,:,:,:)           ! I1 x I4 x I2 x I2.1 x I3
+    REAL(Double),  ALLOCATABLE :: pcoeff(:,:,:,:,:,:,:)  ! I1 x I4 x I2 x I2.1 x I3 x I5 x I6
   END TYPE AerosolCoeff_type
   !:tdoc-:
 
@@ -229,6 +230,7 @@ CONTAINS
 !                                 n_Radii         , &
 !                                 n_Types         , &
 !                                 n_RH            , &
+!                                 n_RH_Radii      , &
 !                                 n_Legendre_Terms, &
 !                                 n_Phase_Elements  )
 !
@@ -272,6 +274,13 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
+!       n_RH_Radii:        The number of relative humidity entries in
+!                          the CRTM and CMAQ tables. Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       n_Legendre_Terms:  The maximum number of Legendre polynomial
 !                          terms in the LUT.
 !                          The "I5" dimension. Can be = 0.
@@ -291,55 +300,61 @@ CONTAINS
 !--------------------------------------------------------------------------------
   ELEMENTAL SUBROUTINE AerosolCoeff_Create( &
       AerosolCoeff    , &
+      Aerosol_Model   , &
       n_Wavelengths   , &
       n_Radii         , &
-      n_Sigma_in      , &
+      n_Sigma         , &
       n_Types         , &
       n_RH            , &
+      n_RH_Radii      , &
       n_Legendre_Terms, &
       n_Phase_Elements  )
       ! Arguments
       TYPE(AerosolCoeff_type), INTENT(OUT) :: AerosolCoeff
+      CHARACTER(*),            INTENT(IN)  :: Aerosol_Model
       INTEGER,                 INTENT(IN)  :: n_Wavelengths
       INTEGER,                 INTENT(IN)  :: n_Radii
-      INTEGER,                 INTENT(IN)  :: n_Sigma_in
+      INTEGER,                 INTENT(IN)  :: n_Sigma
       INTEGER,                 INTENT(IN)  :: n_Types
       INTEGER,                 INTENT(IN)  :: n_RH
+      INTEGER,                 INTENT(IN)  :: n_RH_Radii
       INTEGER,                 INTENT(IN)  :: n_Legendre_Terms
       INTEGER,                 INTENT(IN)  :: n_Phase_Elements
       ! Local parameters
       CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AerosolCoeff_Create'
       ! Local variables
-      INTEGER :: alloc_stat, n_Sigma
+      INTEGER :: alloc_stat
+      INTEGER :: n_RH_case
 
       ! Check input
       IF ( n_Wavelengths    < 1 .OR. &
            n_Radii          < 1 .OR. &
-!yma          n_Sigma_in      < 1 .OR. &
+           n_Sigma          < 1 .OR. &
            n_Types          < 1 .OR. &
            n_RH             < 1 .OR. &
+           n_RH_Radii       < 1 .OR. &
            n_Legendre_Terms < 0 .OR. &
            n_Phase_Elements < 1      ) RETURN
 
-      !--- If R sigma is not present in the aerosol LUT, set the dimension to 1
-      n_Sigma = n_Sigma_in
-      if (n_Sigma <=0) then
-         n_Sigma = 1
-      endif
-
 
       ! Perform the allocations.
-      ALLOCATE( AerosolCoeff%Type( n_Types ), &
+      IF ( Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ' ) THEN
+        n_RH_case = n_RH_Radii
+      ELSE
+        n_RH_case = n_RH
+      END IF
+      ALLOCATE(AerosolCoeff%Type( n_Types ), &
                AerosolCoeff%Type_Name( n_Types ), &
                AerosolCoeff%Wavelength( n_Wavelengths ), &
                AerosolCoeff%Frequency(  n_Wavelengths ), &
                AerosolCoeff%Reff( n_Radii, n_Types ), &
                AerosolCoeff%Rsig( n_Sigma, n_Types ), &
-               AerosolCoeff%RH( n_RH ), &
-               AerosolCoeff%ke( n_Wavelengths, n_Radii, n_Sigma, n_Types ), &
-               AerosolCoeff%w(  n_Wavelengths, n_Radii, n_Sigma, n_Types ), &
-               AerosolCoeff%g(  n_Wavelengths, n_Radii, n_Sigma, n_Types ), &
+               AerosolCoeff%RH( n_RH_case ), &
+               AerosolCoeff%ke( n_Wavelengths, n_RH, n_Radii, n_Sigma, n_Types ), &
+               AerosolCoeff%w(  n_Wavelengths, n_RH, n_Radii, n_Sigma, n_Types ), &
+               AerosolCoeff%g(  n_Wavelengths, n_RH, n_Radii, n_Sigma, n_Types ), &
                AerosolCoeff%pcoeff( n_Wavelengths     , &
+                                    n_RH              , &
                                     n_Radii           , &
                                     n_Sigma           , &
                                     n_Types           , &
@@ -356,6 +371,7 @@ CONTAINS
       AerosolCoeff%n_Radii            = n_Radii
       AerosolCoeff%n_Sigma            = n_Sigma
       AerosolCoeff%n_RH               = n_RH
+      AerosolCoeff%n_RH_Radii         = n_RH_Radii
       AerosolCoeff%Max_Legendre_Terms = n_Legendre_Terms
       AerosolCoeff%n_Legendre_Terms   = n_Legendre_Terms
       AerosolCoeff%Max_Phase_Elements = n_Phase_Elements
@@ -414,6 +430,7 @@ CONTAINS
     WRITE(*,'(3x,"n_Sigma          :",1x,i0)') AerosolCoeff%n_Sigma
     WRITE(*,'(3x,"n_Types          :",1x,i0)') AerosolCoeff%n_Types
     WRITE(*,'(3x,"n_RH             :",1x,i0)') AerosolCoeff%n_RH
+    WRITE(*,'(3x,"n_RH             :",1x,i0)') AerosolCoeff%n_RH_Radii
     WRITE(*,'(3x,"n_Legendre_Terms :",1x,i0)') AerosolCoeff%n_Legendre_Terms
     WRITE(*,'(3x,"n_Phase_Elements :",1x,i0)') AerosolCoeff%n_Phase_Elements
     IF ( .NOT. AerosolCoeff_Associated(AerosolCoeff) ) RETURN
@@ -432,10 +449,8 @@ CONTAINS
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Frequency
     WRITE(*,'(3x,"AerosolCoeff Reff      :")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Reff
-    IF ( AerosolCoeff%n_Sigma > 0 ) THEN
-      WRITE(*,'(3x,"AerosolCoeff Rsig      :")')
-      WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Rsig
-    END IF
+    WRITE(*,'(3x,"AerosolCoeff Rsig      :")')
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Rsig
     WRITE(*,'(3x,"AerosolCoeff RH        :")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%RH
     WRITE(*,'(3x,"AerosolCoeff ke        :")')
@@ -566,6 +581,7 @@ CONTAINS
            &"N_SIGMA=",i3,2x,&
            &"N_TYPES=",i2,2x,&
            &"N_RH=",i3,2x,&
+           &"N_RH_Radii=",i3,2x,&
            &"N_LEGENDRE_TERMS=",i2,2x,&
            &"N_PHASE_ELEMENTS=",i2 )' ) &
            ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
@@ -575,6 +591,7 @@ CONTAINS
            AerosolCoeff%n_Sigma         , &
            AerosolCoeff%n_Types         , &
            AerosolCoeff%n_RH            , &
+           AerosolCoeff%n_RH_Radii      , &
            AerosolCoeff%n_Legendre_Terms, &
            AerosolCoeff%n_Phase_Elements
 
@@ -668,7 +685,7 @@ CONTAINS
          WRITE(Message,'("Invalid aerosol type ID ",i0,", not exist in specified aerosol coefficient file")') Aerosol_ID
          CALL Display_Message(ROUTINE_NAME, Message, Error_Status )
          RETURN
-      END IF 
+      END IF
 
    END FUNCTION AerosolCoeff_typeID_to_index
 
@@ -709,7 +726,7 @@ CONTAINS
 !       If the input type ID not exist, an error message will be issued.
 !
 !
-! GOCART Aerosol_Type_Name =
+! CRTM Aerosol_Type_Name =
 !  "Dust                                                                            ",
 !  "Sea salt-SSAM                                                                   ",
 !  "Sea salt-SSCM1                                                                  ",
@@ -729,6 +746,32 @@ CONTAINS
 !  "Insoluble                                                                       ",
 !  "dust-like                                                                       " ;
 !
+! GOCART-GEOS5 Aerosol_Type_Name =
+!  "Dust 1                                                                          ",
+!  "Dust 2                                                                          ",
+!  "Dust 3                                                                          ",
+!  "Dust 4                                                                          ",
+!  "Dust 5                                                                          ",
+!  "Sea salt 1                                                                      ",
+!  "Sea salt 2                                                                      ",
+!  "Sea salt 3                                                                      ",
+!  "Sea salt 4                                                                      ",
+!  "Sea salt 5                                                                      ",
+!  "Organic carbon 1                                                                ",
+!  "Organic carbon 2                                                                ",
+!  "Black carbon 1                                                                  ",
+!  "Black carbon 2                                                                  ",
+!  "Sulfate 1                                                                       ",
+!  "Sulfate 2                                                                       ",
+!  "Nitrate 1                                                                       ";
+!  "Nitrate 2                                                                       ";
+!  "Nitrate 3                                                                       ";
+!
+! NAAPS Aerosol_Type_Name =
+!  "Dust                                                                            ",
+!  "Smoke                                                                           ",
+!  "Sea salt                                                                        ",
+!  "Anthropogenic and Biogenic Fine Particles                                       ";
 !-------------------------------------------------------------------------------
    FUNCTION AerosolCoeff_typeName_to_index( AerosolCoeff, Aerosol_Name ) RESULT( aerIndex )
 !-------------------------------------------------------------------------------
@@ -905,6 +948,7 @@ CONTAINS
          (x%n_Sigma            /= y%n_Sigma           ) .OR. &
          (x%n_Types            /= y%n_Types           ) .OR. &
          (x%n_RH               /= y%n_RH              ) .OR. &
+         (x%n_RH_Radii         /= y%n_RH_Radii        ) .OR. &
          (x%Max_Legendre_Terms /= y%Max_Legendre_Terms) .OR. &
          (x%n_Legendre_Terms   /= y%n_Legendre_Terms  ) .OR. &
          (x%Max_Phase_Elements /= y%Max_Phase_Elements) .OR. &

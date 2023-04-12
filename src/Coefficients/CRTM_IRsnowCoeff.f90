@@ -2,7 +2,7 @@
 ! CRTM_IRsnowCoeff
 !
 ! Module containing the shared CRTM infrared snow surface emissivity
-! data and their load/destruction routines. 
+! data and their load/destruction routines.
 !
 ! PUBLIC DATA:
 !   IRsnowC:  Data structure containing the infrared snow surface
@@ -19,7 +19,12 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 20-Jan-2012
 !                       paul.vandelst@noaa.gov
-!
+!      Modified by:     Cheng Dang, 05-Mar-2022
+!                       dangch@ucar.edu
+!                       Add SEcategory_ReadFile_IO for netCDF I/O
+!      Modified by:     Cheng Dang, 31-May-2022
+!                       dangch@ucar.edu
+!                       Add IRsnowCoeff modules
 
 MODULE CRTM_IRsnowCoeff
 
@@ -27,11 +32,15 @@ MODULE CRTM_IRsnowCoeff
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Message_Handler  , ONLY: SUCCESS, FAILURE, Display_Message
-  USE SEcategory_Define, ONLY: SEcategory_type, &
-                               SEcategory_Associated, &
-                               SEcategory_Destroy, &
-                               SEcategory_ReadFile
+  USE Message_Handler  ,  ONLY: SUCCESS, FAILURE, Display_Message
+  USE SEcategory_Define,  ONLY: SEcategory_type, &
+                                SEcategory_Associated, &
+                                SEcategory_Destroy
+  USE SEcategory_IO,      ONLY: SEcategory_ReadFile_IO
+  USE IRsnowCoeff_Define, ONLY: IRsnowCoeff_type, &
+                                IRsnowCoeff_Associated, &
+                                IRsnowCoeff_Destroy
+  USE IRsnowCoeff_IO,     ONLY: IRsnowCoeff_ReadFile
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -42,11 +51,12 @@ MODULE CRTM_IRsnowCoeff
   ! Everything private by default
   PRIVATE
   ! The shared data
-  PUBLIC :: IRsnowC
+  PUBLIC :: IRsnowC_SE, IRsnowC
   ! Procedures
   PUBLIC :: CRTM_IRsnowCoeff_Load
   PUBLIC :: CRTM_IRsnowCoeff_Destroy
   PUBLIC :: CRTM_IRsnowCoeff_IsLoaded
+  PUBLIC :: CRTM_IRsnowCoeff_SE_IsLoaded
 
 
   ! -----------------
@@ -59,7 +69,8 @@ MODULE CRTM_IRsnowCoeff
   ! ------------------------------------------------
   ! The shared infrared snow surface emissivity data
   ! ------------------------------------------------
-  TYPE(SEcategory_type), SAVE :: IRsnowC
+  TYPE(SEcategory_type),  SAVE :: IRsnowC_SE
+  TYPE(IRsnowCoeff_type), SAVE :: IRsnowC
 
 
 CONTAINS
@@ -79,6 +90,8 @@ CONTAINS
 !       Error_Status = CRTM_IRsnowCoeff_Load( &
 !                        Filename,                              &
 !                        File_Path         = File_Path        , &
+!                        netCDF            = netCDF           , &
+!                        isSEcategory      = isSEcategory     , &
 !                        Quiet             = Quiet            , &
 !                        Process_ID        = Process_ID       , &
 !                        Output_Process_ID = Output_Process_ID  )
@@ -97,6 +110,25 @@ CONTAINS
 !                           directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       netCDF:             Set this logical argument to specify file format.
+!                           If == .FALSE., Binary [DEFAULT].
+!                              == .TRUE.,  netCDF
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       isSEcategory:       Set this logical argument to specify emissivity
+!                           classification.
+!                           If == .TRUE., SEcategory [DEFAULT].
+!                              == .False.,  Nalli
+!                           If not specified, default is .TRUE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -123,7 +155,7 @@ CONTAINS
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
 !                           all INFORMATION messages are to be output. If
 !                           the passed Process_ID value agrees with this value
-!                           the INFORMATION messages are output. 
+!                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
 !                           is set.
 !                           UNITS:      N/A
@@ -151,6 +183,8 @@ CONTAINS
   FUNCTION CRTM_IRsnowCoeff_Load( &
     Filename         , &  ! Input
     File_Path        , &  ! Optional input
+    netCDF           , &  ! Optional input
+    isSEcategory     , &  ! Optional input
     Quiet            , &  ! Optional input
     Process_ID       , &  ! Optional input
     Output_Process_ID) &  ! Optional input
@@ -158,7 +192,9 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: Filename
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
-    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
+    LOGICAL,      OPTIONAL, INTENT(IN) :: netCDF
+    LOGICAL,      OPTIONAL, INTENT(IN) :: isSEcategory
+    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
     ! Function result
@@ -169,8 +205,11 @@ CONTAINS
     CHARACTER(ML) :: msg, pid_msg
     CHARACTER(ML) :: IRsnowCoeff_File
     LOGICAL :: noisy
+    ! Function variables
+    LOGICAL :: Binary
+    LOGICAL :: SEcategory
 
-    ! Setup 
+    ! Setup
     err_stat = SUCCESS
     ! ...Assign the filename to local variable
     IRsnowCoeff_File = ADJUSTL(Filename)
@@ -189,23 +228,39 @@ CONTAINS
     ELSE
       pid_msg = ''
     END IF
-    
-    
-    ! Read the IR snow SEcategory file
-    err_stat = SEcategory_ReadFile( &
-                 IRsnowC, &
-                 IRsnowCoeff_File, &
-                 Quiet = .NOT. noisy )
+    ! ...Check netCDF argument
+    Binary = .TRUE.
+    IF ( PRESENT(netCDF) ) Binary = .NOT. netCDF
+    ! ...Check SEcategory argument
+    SEcategory = .TRUE.
+    IF ( PRESENT(isSEcategory) ) SEcategory = isSEcategory
+
+    ! Read IR snow emissivity file
+    IF ( SEcategory ) THEN
+      ! SEcategory
+      err_stat = SEcategory_ReadFile_IO( &
+                   IRsnowC_SE, &
+                   IRsnowCoeff_File, &
+                   netCDF = .NOT. Binary, &
+                   Quiet = .NOT. noisy )
+    ELSE
+      ! Other classifications
+      err_stat = IRsnowCoeff_ReadFile( &
+                   IRsnowC, &
+                   IRsnowCoeff_File, &
+                   netCDF = .NOT. Binary, &
+                   Quiet = .NOT. noisy )
+    END IF
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error reading IRsnowCoeff SEcategory file '//TRIM(IRsnowCoeff_File)//TRIM(pid_msg)
-      CALL Load_Cleanup(); RETURN
+     msg = 'Error reading IRsnowCoeff file '//TRIM(IRsnowCoeff_File)//TRIM(pid_msg)
+     CALL Load_Cleanup(); RETURN
     END IF
 
-
    CONTAINS
-   
+
      SUBROUTINE Load_CleanUp()
-       CALL SEcategory_Destroy( IRsnowC )
+       CALL SEcategory_Destroy( IRsnowC_SE )
+       CALL IRsnowCoeff_Destroy( IRsnowC )
        err_stat = FAILURE
        CALL Display_Message( ROUTINE_NAME, msg, err_stat )
      END SUBROUTINE Load_CleanUp
@@ -273,9 +328,17 @@ CONTAINS
       pid_msg = ''
     END IF
 
-    ! Destroy the structure
-    CALL SEcategory_Destroy( IRsnowC )
-    IF ( SEcategory_Associated( IRsnowC ) ) THEN
+    ! Destroy the data structure
+    ! ...SEcategory
+    CALL SEcategory_Destroy( IRsnowC_SE )
+    IF ( SEcategory_Associated( IRsnowC_SE ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error deallocating IRsnowCoeff_SE shared data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
+    ! ...Other classifications
+    CALL IRsnowCoeff_Destroy( IRsnowC )
+    IF ( IRsnowCoeff_Associated( IRsnowC ) ) THEN
       err_stat = FAILURE
       msg = 'Error deallocating IRsnowCoeff shared data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
@@ -283,7 +346,7 @@ CONTAINS
 
   END FUNCTION CRTM_IRsnowCoeff_Destroy
 
-  
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -295,14 +358,39 @@ CONTAINS
 !       been loaded into the public data structure IRsnowC.
 !
 ! CALLING SEQUENCE:
-!       status = CRTM_IRsnowCoeff_IsLoaded()
+!       status = CRTM_IRsnowCoeff_IsLoaded
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_IRsnowCoeff_IsLoaded() RESULT( IsLoaded )
     LOGICAL :: IsLoaded
-    IsLoaded = SEcategory_Associated( IRsnowC )
+
+    IsLoaded = IRsnowCoeff_Associated( IRsnowC )
+
   END FUNCTION CRTM_IRsnowCoeff_IsLoaded
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_IRsnowCoeff_SE_IsLoaded
+!
+! PURPOSE:
+!       Function to test if infrared snow surface emissivity data has
+!       been loaded into the public data structure IRsnowC_SE.
+!
+! CALLING SEQUENCE:
+!       status = CRTM_IRsnowCoeff_SE_IsLoaded
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION CRTM_IRsnowCoeff_SE_IsLoaded() RESULT( IsLoaded )
+    LOGICAL :: IsLoaded
+
+    IsLoaded = SEcategory_Associated( IRsnowC_SE )
+
+  END FUNCTION CRTM_IRsnowCoeff_SE_IsLoaded
 
 END MODULE CRTM_IRsnowCoeff

@@ -26,6 +26,7 @@ MODULE CRTM_TauCoeff
   ! Environment setup
   ! -----------------
   ! Module use
+  USE NETCDF
   USE Type_Kinds          , ONLY: Long
   USE File_Utility        , ONLY: File_Exists
   USE Binary_File_Utility , ONLY: Open_Binary_File
@@ -97,6 +98,7 @@ CONTAINS
 !       Error_Status = CRTM_Load_TauCoeff( Sensor_ID        =Sensor_ID,         &  ! Optional input
 !                                          File_Path        =File_Path,         &  ! Optional input
 !                                          Quiet            =Quiet,             &  ! Optional input
+!                                          netCDF           =netCDF,            &  ! Optional input
 !                                          Process_ID       =Process_ID,        &  ! Optional input
 !                                          Output_Process_ID=Output_Process_ID, &  ! Optional input
 !                                          Message_Log      =Message_Log        )  ! Error messaging
@@ -134,6 +136,16 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       netCDF:             Set this argument to switch from binary to netCDF
+!                           I/O for ODPS files.
+!                           If netCDF = .FALSE., Binary file is loaded.
+!                              netCDF = .TRUE., netCDF file is loaded.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !
 !       Process_ID:         Set this argument to the MPI process ID that this
 !                           function call is running under. This value is used
@@ -188,6 +200,7 @@ CONTAINS
   FUNCTION CRTM_Load_TauCoeff( Sensor_ID        , &  ! Input
                                File_Path        , &  ! Optional input
                                Quiet            , &  ! Optional input
+                               netCDF           , &  ! Optional input
                                Process_ID       , &  ! Optional input
                                Output_Process_ID, &  ! Optional input
                                Message_Log      ) &  ! Error messaging
@@ -197,6 +210,7 @@ CONTAINS
     CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN) :: Sensor_ID
     CHARACTER(*),               OPTIONAL, INTENT(IN) :: File_Path
     INTEGER,                    OPTIONAL, INTENT(IN) :: Quiet
+    LOGICAL,                    OPTIONAL, INTENT(IN) :: netCDF 
     INTEGER,                    OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER,                    OPTIONAL, INTENT(IN) :: Output_Process_ID
     CHARACTER(*),               OPTIONAL, INTENT(IN) :: Message_Log
@@ -217,6 +231,7 @@ CONTAINS
     CHARACTER(SL), ALLOCATABLE :: SensorIDs(:)
     CHARACTER(SL), ALLOCATABLE :: zfnames(:)
     INTEGER,       ALLOCATABLE :: SensorIndex(:)
+    LOGICAL :: binary 
 
     ! Set up
     Error_Status = SUCCESS
@@ -230,6 +245,9 @@ CONTAINS
     ELSE
       Process_ID_Tag = ' '
     END IF
+    ! ...Check netCDF argument
+    binary = .TRUE.
+    IF ( PRESENT(netCDF) ) binary = .NOT. netCDF
 
     ! Determine the number of sensors and construct their filenames
     IF ( PRESENT(Sensor_ID) ) THEN
@@ -247,17 +265,26 @@ CONTAINS
         RETURN
       END IF
       DO n=1,n_Sensors
-        TauCoeff_File(n) = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.bin'
+        IF ( binary ) THEN
+          TauCoeff_File(n) = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.bin'
+        ELSE
+          TauCoeff_File(n) = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.nc'
+        END IF
       END DO
     ELSE
       ! No sensors specified. Use default filename.
-      n_Sensors=1
-      TauCoeff_File(1) = 'TauCoeff.bin'
+      IF ( binary ) THEN
+        n_Sensors=1
+        TauCoeff_File(1) = 'TauCoeff.bin'
+      ELSE
+        n_Sensors=1
+        TauCoeff_File(1) = 'TauCoeff.nc'
+      END IF
     END IF
     
     ! Add the file path
     DO n=1,n_Sensors
-      TauCoeff_File(n) = TRIM(local_path)//TRIM(TauCoeff_File(n))
+      TauCoeff_File(n) = TRIM(ADJUSTL(local_path))//TRIM(TauCoeff_File(n))
     END DO
 
     ! set the sensor dimension for structure TC
@@ -296,9 +323,15 @@ CONTAINS
       TC%Sensor_Index(n) = n
 
       ! Get the transmittance algorithm ID
-      Error_Status = Inquire_AlgorithmID( TRIM(TauCoeff_File(n)), &
-                                          Algorithm_ID,           &
-                                          Message_Log = Message_Log )
+      IF( binary ) THEN
+        Error_Status = Inquire_AlgorithmID( TRIM(TauCoeff_File(n)), &
+                                            Algorithm_ID,           &
+                                            Message_Log = Message_Log )
+      ELSE
+        Error_Status = Inquire_AlgorithmID_nc4( TRIM(TauCoeff_File(n)), &
+                                                Algorithm_ID,           &
+                                                Message_Log = Message_Log )
+      END IF
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'cannot obtain transmittance algorithm ID from file '//&
@@ -368,6 +401,7 @@ CONTAINS
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
                                        Quiet            =Quiet            , & 
+                                       netCDF           =netCDF           , &
                                        Process_ID       =Process_ID       , & 
                                        Output_Process_ID=Output_Process_ID, & 
                                        Message_Log      =Message_Log        ) 
@@ -376,6 +410,7 @@ CONTAINS
         Error_Status = ODAS_Load_TauCoeff( &
                                        File_Path        =File_Path        , &
                                        Quiet            =Quiet            , &
+                                       netCDF           =netCDF           , &
                                        Process_ID       =Process_ID       , &
                                        Output_Process_ID=Output_Process_ID, &
                                        Message_Log      =Message_Log        )
@@ -414,7 +449,8 @@ CONTAINS
         Error_Status = ODPS_Load_TauCoeff( &
                                        Sensor_ID        =SensorIDs(1:n)   , & 
                                        File_Path        =File_Path        , & 
-                                       Quiet            =Quiet            , & 
+                                       Quiet            =Quiet            , &
+                                       netCDF           =netCDF           , & 
                                        Process_ID       =Process_ID       , & 
                                        Output_Process_ID=Output_Process_ID, & 
                                        Message_Log      =Message_Log        ) 
@@ -423,6 +459,7 @@ CONTAINS
         Error_Status = ODPS_Load_TauCoeff( &
                                        File_Path        =File_Path        , &
                                        Quiet            =Quiet            , &
+                                       netCDF           =netCDF           , &
                                        Process_ID       =Process_ID       , &
                                        Output_Process_ID=Output_Process_ID, &
                                        Message_Log      =Message_Log        )
@@ -826,6 +863,104 @@ CONTAINS
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION Inquire_AlgorithmID
+
+
+
+FUNCTION Inquire_AlgorithmID_nc4(  Filename        , &  ! Input
+                                   Algorithm_ID    , &  ! Output
+                                   RCS_Id          , &  ! Revision control
+                                   Message_Log     ) &  ! Error messaging
+                                RESULT( Error_Status )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER,                INTENT(OUT) :: Algorithm_ID
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    ! Function result
+    INTEGER :: Error_Status
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_AlgorithmID_nc4'
+
+    ! Function variables
+    CHARACTER(256) :: Message
+    INTEGER :: IO_Status
+    INTEGER :: FileID
+    INTEGER(Long) :: Algorithm_ID_in
+    INTEGER(Long) :: Release_in
+    INTEGER(Long) :: Version_in
+
+ 
+    ! Set up
+    ! ------
+    Error_Status = SUCCESS
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
+
+    ! Check that the file exists
+    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
+      Message = 'File '//TRIM(Filename)//' not found.'
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+
+    ! Open the file
+    ! -------------
+    CALL NC4CHECK(NF90_OPEN(Filename, NF90_NOWRITE, FileID)) 
+
+
+    ! Read the Release and Version information
+    ! ----------------------------------------
+    CALL NC4CHECK( NF90_GET_ATT(FileID, NF90_GLOBAL, "Release", Release_in) )
+    CALL NC4CHECK( NF90_GET_ATT(FileID, NF90_GLOBAL, "Version", Version_in) )
+
+    ! Read the Alorithm ID
+    ! --------------------
+    CALL NC4CHECK( NF90_GET_ATT(FileID, NF90_GLOBAL, "Algorithm", Algorithm_ID_in) )
+
+    ! Assign the return argument
+    Algorithm_ID = Algorithm_ID_in
+
+    ! Close the file
+    ! --------------
+    CALL NC4CHECK( NF90_CLOSE(FileID) )
+
+  CONTAINS
+  
+    SUBROUTINE Inquire_CleanUp( Close_File )
+      INTEGER, OPTIONAL, INTENT(IN) :: Close_File
+      CHARACTER(256) :: Close_Message
+      ! Close file if necessary
+      IF ( PRESENT(Close_File) ) THEN
+        IF ( Close_File == SET ) THEN
+          CLOSE( FileID, IOSTAT=IO_Status )
+          IF ( IO_Status /= 0 ) THEN
+            WRITE( Close_Message,'("; Error closing input file during error cleanup. IOSTAT=",i0)') &
+                                 IO_Status
+            Message = TRIM(Message)//TRIM(Close_Message)
+          END IF
+        END IF
+      END IF
+      ! Set error status and print error message
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            TRIM(Message), &
+                            Error_Status, &
+                            Message_Log=Message_Log )
+    END SUBROUTINE Inquire_CleanUp
+
+
+    SUBROUTINE NC4CHECK(status)
+      INTEGER, INTENT(IN) :: status   
+      IF( status /= NF90_NOERR ) THEN
+        WRITE(*,*) TRIM(NF90_STRERROR(status))
+        STOP 2
+      END IF 
+    END SUBROUTINE NC4CHECK
+
+
+  END FUNCTION Inquire_AlgorithmID_nc4
+
+
+
 
   !------------------------------------------------------------------------------------------
   ! Extract sensor IDs and sensor indexes

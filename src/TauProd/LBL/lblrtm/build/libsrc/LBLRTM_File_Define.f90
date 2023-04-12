@@ -44,7 +44,7 @@ MODULE LBLRTM_File_Define
   PUBLIC :: LBLRTM_File_Destroy
   PUBLIC :: LBLRTM_File_Create
   PUBLIC :: LBLRTM_File_Inspect
-  PUBLIC :: LBLRTM_File_DefineVersion
+  !PUBLIC :: LBLRTM_File_DefineVersion
   PUBLIC :: LBLRTM_File_Compare
 
 
@@ -63,7 +63,7 @@ MODULE LBLRTM_File_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -355,10 +355,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_File_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_File_DefineVersion
+!  SUBROUTINE LBLRTM_File_DefineVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    Id = MODULE_VERSION_ID
+!  END SUBROUTINE LBLRTM_File_DefineVersion
 
 
 !------------------------------------------------------------------------------

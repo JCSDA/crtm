@@ -73,13 +73,14 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: THREE         =  3.0_fp
   REAL(fp), PUBLIC, PARAMETER :: FOUR          =  4.0_fp
   REAL(fp), PUBLIC, PARAMETER :: FIVE          =  5.0_fp
-  REAL(fp), PUBLIC, PARAMETER :: TEN           = 10.0_fp
+  REAL(fp), PUBLIC, PARAMETER :: TEN           =  10.0_fp
   REAL(fp), PUBLIC, PARAMETER :: POINT_25      =  0.25_fp
   REAL(fp), PUBLIC, PARAMETER :: POINT_5       =  0.5_fp
   REAL(fp), PUBLIC, PARAMETER :: POINT_75      =  0.75_fp
   REAL(fp), PUBLIC, PARAMETER :: ONEpointFIVE  =  1.5_fp
-                                                                                                        
-
+  REAL(fp), PUBLIC, PARAMETER :: ONE_THOUSAND  =  1000.0_fp                                                  
+  REAL(fp), PUBLIC, PARAMETER :: EPSILON_FP    =  EPSILON(REAL(fp)) 
+  
   ! --------------------
   ! PI-related constants
   ! --------------------
@@ -115,7 +116,9 @@ MODULE CRTM_Parameters
   ! Default string length for SensorIDs
   INTEGER, PUBLIC, PARAMETER :: STRLEN = 20
 
-
+  ! No backscattering for active sensors
+  REAL(fp), PUBLIC, PARAMETER :: MISSING_REFL  =  -9999.0_fp 
+  
   !#----------------------------------------------------------------------------#
   !#                       -- AtmAbsorption PARAMETERS --                       #
   !#----------------------------------------------------------------------------#
@@ -276,7 +279,7 @@ MODULE CRTM_Parameters
   
  
   !#----------------------------------------------------------------------------#
-  !#            -- GOCART Aerosol Parameters                      --            #
+  !#            -- CRTM Aerosol Parameters                        --            #
   !#----------------------------------------------------------------------------#
   INTEGER, PUBLIC, PARAMETER ::        INVALID_AEROSOL = 0
   INTEGER, PUBLIC, PARAMETER ::           DUST_AEROSOL = 1

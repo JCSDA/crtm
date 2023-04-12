@@ -13,7 +13,9 @@
 !       Modified by     Yingtao Ma, 2020/6/11
 !                       yingtao.ma@noaa.gov
 !                       Implemented CMAQ aerosol
-!
+!       Modified by     Cheng Dang, 2020/11/23
+!                       dangch@ucar.edu
+!                       Add relative humidity to aerosol data type
 
 MODULE CRTM_Aerosol_Define
 
@@ -1501,7 +1503,7 @@ CONTAINS
 
 
     ! Read the aerosol data
-    IF ( AeroC%Scheme == 'GOCART' ) THEN
+    IF ( AeroC%Scheme == 'CRTM' ) THEN
       READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
          aerosol%Type, &
          aerosol%Effective_Radius, &
@@ -1511,6 +1513,15 @@ CONTAINS
          aerosol%Type, &
          aerosol%Effective_Radius, &
          aerosol%Effective_Variance, &
+         aerosol%Concentration
+    ELSEIF ( AeroC%Scheme == 'GOCART-GEOS5' ) THEN
+      READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         aerosol%Type, &
+         aerosol%Effective_Radius, &
+         aerosol%Concentration
+    ELSEIF ( AeroC%Scheme == 'NAAPS' ) THEN
+      READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         aerosol%Type, &
          aerosol%Concentration
     ELSE
       msg = 'Invalid aerosol coefficient table.'
@@ -1577,7 +1588,7 @@ CONTAINS
 
 
     ! Write the data
-    IF ( AeroC%Scheme == 'GOCART' ) THEN
+    IF ( AeroC%Scheme == 'CRTM' ) THEN
       WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
          Aerosol%Type, &
          Aerosol%Effective_Radius(1:Aerosol%n_Layers), &
@@ -1587,6 +1598,15 @@ CONTAINS
          Aerosol%Type, &
          Aerosol%Effective_Radius(1:Aerosol%n_Layers), &
          Aerosol%Effective_Variance(1:Aerosol%n_Layers), &
+         Aerosol%Concentration(1:Aerosol%n_Layers)
+    ELSEIF ( AeroC%Scheme == 'GOCART-GEOS5' ) THEN
+      WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         Aerosol%Type, &
+         Aerosol%Effective_Radius(1:Aerosol%n_Layers), &
+         Aerosol%Concentration(1:Aerosol%n_Layers)
+    ELSEIF ( AeroC%Scheme == 'NAAPS' ) THEN
+      WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         Aerosol%Type, &
          Aerosol%Concentration(1:Aerosol%n_Layers)
     ELSE
       msg = 'Invalid aerosol coefficient table.'

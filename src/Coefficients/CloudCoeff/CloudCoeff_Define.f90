@@ -10,6 +10,9 @@
 !                       Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov
 !                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
 !
+!       Modified by:    Isaac Moradi ESSIC/GMAO          24-Aug-2021
+!                                    Isaac.Moradi@nasa.gov
+!
 
 MODULE CloudCoeff_Define
 
@@ -41,7 +44,11 @@ MODULE CloudCoeff_Define
   PUBLIC :: CloudCoeff_ValidRelease
   PUBLIC :: CloudCoeff_Info
   
-
+  ! Available Cloud versions
+  PUBLIC INVALID_CLOUDCOEFF
+  PUBLIC MIE_TAMU_CLOUDCOEFF
+  PUBLIC DDA_ARTS_CLOUDCOEFF
+  
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
@@ -58,8 +65,12 @@ MODULE CloudCoeff_Define
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: CLOUDCOEFF_RELEASE = 3  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: CLOUDCOEFF_VERSION = 1  ! This is just the data version for the release.
+  INTEGER, PARAMETER :: CLOUDCOEFF_RELEASE  = 3  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: INVALID_CLOUDCOEFF  = 0  
+  INTEGER, PARAMETER :: MIE_TAMU_CLOUDCOEFF = 1  
+  INTEGER, PARAMETER :: DDA_ARTS_CLOUDCOEFF = 2  
+  
+  
   ! Meggage string length
   INTEGER, PARAMETER :: ML = 256
 
@@ -87,7 +98,7 @@ MODULE CloudCoeff_Define
   TYPE :: CloudCoeff_type
     ! Release and version information
     INTEGER(Long) :: Release = CLOUDCOEFF_RELEASE
-    INTEGER(Long) :: Version = CLOUDCOEFF_VERSION
+    INTEGER(Long) :: Version = INVALID_CLOUDCOEFF
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Dataset parameter definitions (eventually stored in the datafile)
@@ -100,35 +111,41 @@ MODULE CloudCoeff_Define
     INTEGER(Long) :: n_IR_Frequencies   = 0   ! I3 dimension
     INTEGER(Long) :: n_IR_Radii         = 0   ! I4 dimension
     INTEGER(Long) :: n_Temperatures     = 0   ! I5 dimension
-    INTEGER(Long) :: n_Densities        = 0   ! I6 dimension
+    INTEGER(Long) :: n_MW_Densities     = 0   ! I6 dimension
+    INTEGER(Long) :: n_IR_Densities     = 0   ! I6 dimension
     INTEGER(Long) :: Max_Legendre_Terms = 0   ! I7 dimension
     INTEGER(Long) :: n_Legendre_Terms   = 0   
     INTEGER(Long) :: Max_Phase_Elements = 0   ! I8 dimension
     INTEGER(Long) :: n_Phase_Elements   = 0   
     ! LUT dimension vectors
-    REAL(Double), ALLOCATABLE :: Frequency_MW(:)  ! I1
-    REAL(Double), ALLOCATABLE :: Frequency_IR(:)  ! I3
-    REAL(Double), ALLOCATABLE :: Reff_MW(:)       ! I2 
-    REAL(Double), ALLOCATABLE :: Reff_IR(:)       ! I4
-    REAL(Double), ALLOCATABLE :: Temperature(:)   ! I5
-    REAL(Double), ALLOCATABLE :: Density(:)       ! I6
+    REAL(Double), ALLOCATABLE :: Frequency_MW(:)        ! I1
+    REAL(Double), ALLOCATABLE :: Frequency_IR(:)        ! I3
+    REAL(Double), ALLOCATABLE :: Water_Density_MW(:)    ! I2 
+    REAL(Double), ALLOCATABLE :: Reff_MW(:)             ! I2 
+    REAL(Double), ALLOCATABLE :: Reff_IR(:)             ! I4
+    REAL(Double), ALLOCATABLE :: Temperature(:)         ! I5
+    REAL(Double), ALLOCATABLE :: Density_MW(:)          ! I6
+    REAL(Double), ALLOCATABLE :: Density_IR(:)          ! I6
     ! Microwave data for liquid phase clouds
     REAL(Double), ALLOCATABLE :: ke_L_MW(:,:,:)          ! I1 x I2 x I5
     REAL(Double), ALLOCATABLE :: w_L_MW(:,:,:)           ! I1 x I2 x I5
     REAL(Double), ALLOCATABLE :: g_L_MW(:,:,:)           ! I1 x I2 x I5
+    REAL(Double), ALLOCATABLE :: kb_L_MW(:,:,:)          ! I1 x I2 x I5
     REAL(Double), ALLOCATABLE :: pcoeff_L_MW(:,:,:,:,:)  ! I1 x I2 x I5 x I7 x I8
     ! Microwave data for solid phase clouds
     REAL(Double), ALLOCATABLE :: ke_S_MW(:,:,:)          ! I1 x I2 x I6
     REAL(Double), ALLOCATABLE :: w_S_MW(:,:,:)           ! I1 x I2 x I6
     REAL(Double), ALLOCATABLE :: g_S_MW(:,:,:)           ! I1 x I2 x I6
+    REAL(Double), ALLOCATABLE :: kb_S_MW(:,:,:)          ! I1 x I2 x I6
     REAL(Double), ALLOCATABLE :: pcoeff_S_MW(:,:,:,:,:)  ! I1 x I2 x I6 x I7 x I8
     ! Infrared data. Note that the 0'th element in the I6 dimension
     ! of these data correspond to the liquid phase component. The
     ! remaining elements in this dimension are for the solid phase
     ! component
-    REAL(Double), ALLOCATABLE :: ke_IR(:,:,:)        ! I3 x I4 x 0:I6
-    REAL(Double), ALLOCATABLE :: w_IR(:,:,:)         ! I3 x I4 x 0:I6
-    REAL(Double), ALLOCATABLE :: g_IR(:,:,:)         ! I3 x I4 x 0:I6
+    REAL(Double), ALLOCATABLE :: ke_IR(:,:,:)        ! I3 x I4 x I6
+    REAL(Double), ALLOCATABLE :: w_IR(:,:,:)         ! I3 x I4 x I6
+    REAL(Double), ALLOCATABLE :: g_IR(:,:,:)         ! I3 x I4 x I6
+    REAL(Double), ALLOCATABLE :: kb_IR(:,:,:)        ! I3 x I4 x I6
     REAL(Double), ALLOCATABLE :: pcoeff_IR(:,:,:,:)  ! I3 x I4 x 0:I6 x I7
   END TYPE CloudCoeff_type
   !:tdoc-:
@@ -217,7 +234,8 @@ CONTAINS
     CloudCoeff%n_IR_Frequencies   = 0
     CloudCoeff%n_IR_Radii         = 0
     CloudCoeff%n_Temperatures     = 0
-    CloudCoeff%n_Densities        = 0
+    CloudCoeff%n_MW_Densities     = 0
+    CloudCoeff%n_IR_Densities     = 0
     CloudCoeff%Max_Legendre_Terms = 0
     CloudCoeff%n_Legendre_Terms   = 0
     CloudCoeff%Max_Phase_Elements = 0
@@ -237,10 +255,11 @@ CONTAINS
 !       CALL CloudCoeff_Create( CloudCoeff      , &
 !                               n_MW_Frequencies, &
 !                               n_MW_Radii      , &
+!                               n_MW_Densities  , &
 !                               n_IR_Frequencies, &
 !                               n_IR_Radii      , &
+!                               n_IR_Densities  , &
 !                               n_Temperatures  , &
-!                               n_Densities     , &
 !                               n_Legendre_Terms, &
 !                               n_Phase_Elements  )
 !
@@ -268,6 +287,14 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
+!       n_MW_Densities:    The number of fixed MW densities for snow, graupel,
+!                          and hail/ice in the LUT. 
+!                          The "I6" dimension. Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       n_IR_Frequencies:  The number of infrared frequencies in
 !                          the LUT 
 !                          The "I3" dimension. Must be > 0.
@@ -284,17 +311,17 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       n_Temperatures:    The number of discrete layer temperatures
-!                          in the LUT. 
-!                          The "I5" dimension. Must be > 0.
+!       n_IR_Densities:    The number of fixed IR densities for snow, graupel,
+!                          and hail/ice in the LUT. 
+!                          The "I6" dimension. Must be > 0.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       n_Densities:       The number of fixed densities for snow, graupel,
-!                          and hail/ice in the LUT. 
-!                          The "I6" dimension. Must be > 0.
+!       n_Temperatures:    The number of discrete layer temperatures
+!                          in the LUT. 
+!                          The "I5" dimension. Must be > 0.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
@@ -322,20 +349,22 @@ CONTAINS
     CloudCoeff      , &
     n_MW_Frequencies, &
     n_MW_Radii      , &
+    n_MW_Densities  , &
     n_IR_Frequencies, &
     n_IR_Radii      , &
+    n_IR_Densities  , &
     n_Temperatures  , &
-    n_Densities     , &
     n_Legendre_Terms, &
     n_Phase_Elements  )
     ! Arguments
     TYPE(CloudCoeff_type) , INTENT(OUT) :: CloudCoeff
     INTEGER,                INTENT(IN)  :: n_MW_Frequencies
     INTEGER,                INTENT(IN)  :: n_MW_Radii
+    INTEGER,                INTENT(IN)  :: n_MW_Densities
     INTEGER,                INTENT(IN)  :: n_IR_Frequencies
     INTEGER,                INTENT(IN)  :: n_IR_Radii
+    INTEGER,                INTENT(IN)  :: n_IR_Densities
     INTEGER,                INTENT(IN)  :: n_Temperatures
-    INTEGER,                INTENT(IN)  :: n_Densities
     INTEGER,                INTENT(IN)  :: n_Legendre_Terms
     INTEGER,                INTENT(IN)  :: n_Phase_Elements
     ! Local parameters
@@ -346,10 +375,11 @@ CONTAINS
     ! Check input
     IF ( n_MW_Frequencies < 1 .OR. &
          n_MW_Radii       < 1 .OR. &
+         n_MW_Densities   < 1 .OR. &
          n_IR_Frequencies < 1 .OR. &
          n_IR_Radii       < 1 .OR. &
+         n_IR_Densities   < 1 .OR. &
          n_Temperatures   < 1 .OR. &
-         n_Densities      < 1 .OR. &
          n_Legendre_Terms < 0 .OR. &
          n_Phase_Elements < 1      ) RETURN
 
@@ -359,15 +389,18 @@ CONTAINS
     ! ...Allocate the dimension vectors
     ALLOCATE( CloudCoeff%Frequency_MW(n_MW_Frequencies), &
               CloudCoeff%Frequency_IR(n_IR_Frequencies), &
+              CloudCoeff%Water_Density_MW(n_MW_Radii), &
               CloudCoeff%Reff_MW(n_MW_Radii), &
               CloudCoeff%Reff_IR(n_IR_Radii), &
               CloudCoeff%Temperature(n_Temperatures), &
-              CloudCoeff%Density(n_Densities), &
+              CloudCoeff%Density_MW(n_MW_Densities), &
+              CloudCoeff%Density_IR(n_IR_Densities), &
               STAT = alloc_stat(1) )
     ! ...Allocate the microwave liquid phase arrays
     ALLOCATE( CloudCoeff%ke_L_MW(n_MW_Frequencies, n_MW_Radii, n_Temperatures), &
               CloudCoeff%w_L_MW(n_MW_Frequencies , n_MW_Radii, n_Temperatures), &
               CloudCoeff%g_L_MW(n_MW_Frequencies , n_MW_Radii, n_Temperatures), &
+              CloudCoeff%kb_L_MW(n_MW_Frequencies, n_MW_Radii, n_Temperatures), &
               CloudCoeff%pcoeff_L_MW(n_MW_Frequencies  , &
                                      n_MW_Radii        , &
                                      n_Temperatures    , &
@@ -375,22 +408,24 @@ CONTAINS
                                      n_Phase_Elements    ), &
               STAT = alloc_stat(2) )
     ! ...Allocate the microwave solid phase arrays
-    ALLOCATE( CloudCoeff%ke_S_MW(n_MW_Frequencies, n_MW_Radii, n_Densities), &
-              CloudCoeff%w_S_MW(n_MW_Frequencies , n_MW_Radii, n_Densities), &
-              CloudCoeff%g_S_MW(n_MW_Frequencies , n_MW_Radii, n_Densities), &
+    ALLOCATE( CloudCoeff%ke_S_MW(n_MW_Frequencies, n_MW_Radii, n_MW_Densities), &
+              CloudCoeff%w_S_MW(n_MW_Frequencies , n_MW_Radii, n_MW_Densities), &
+              CloudCoeff%g_S_MW(n_MW_Frequencies , n_MW_Radii, n_MW_Densities), &
+              CloudCoeff%kb_S_MW(n_MW_Frequencies, n_MW_Radii, n_MW_Densities), &
               CloudCoeff%pcoeff_S_MW(n_MW_Frequencies  , &
                                      n_MW_Radii        , &
-                                     n_Densities       , &
+                                     n_MW_Densities       , &
                                      0:n_Legendre_Terms, &
                                      n_Phase_Elements    ), &
               STAT = alloc_stat(3) )
     ! ...Allocate the infrared arrays
-    ALLOCATE( CloudCoeff%ke_IR(n_IR_Frequencies, n_IR_Radii, 0:n_Densities), &
-              CloudCoeff%w_IR(n_IR_Frequencies , n_IR_Radii, 0:n_Densities), &
-              CloudCoeff%g_IR(n_IR_Frequencies , n_IR_Radii, 0:n_Densities), &
+    ALLOCATE( CloudCoeff%ke_IR(n_IR_Frequencies, n_IR_Radii, n_IR_Densities), &
+              CloudCoeff%w_IR(n_IR_Frequencies , n_IR_Radii, n_IR_Densities), &
+              CloudCoeff%g_IR(n_IR_Frequencies , n_IR_Radii, n_IR_Densities), &
+              CloudCoeff%kb_IR(n_IR_Frequencies, n_IR_Radii, n_IR_Densities), &
               CloudCoeff%pcoeff_IR(n_IR_Frequencies  , &
                                    n_IR_Radii        , &
-                                   0:n_Densities     , &
+                                   n_IR_Densities     , &
                                    0:n_Legendre_Terms  ), &
               STAT = alloc_stat(4) )
     IF ( ANY(alloc_stat /= 0) ) RETURN
@@ -400,35 +435,41 @@ CONTAINS
     ! ...Dimensions
     CloudCoeff%n_MW_Frequencies   = n_MW_Frequencies
     CloudCoeff%n_MW_Radii         = n_MW_Radii
+    CloudCoeff%n_MW_Densities     = n_MW_Densities
     CloudCoeff%n_IR_Frequencies   = n_IR_Frequencies
     CloudCoeff%n_IR_Radii         = n_IR_Radii
+    CloudCoeff%n_IR_Densities     = n_IR_Densities
     CloudCoeff%n_Temperatures     = n_Temperatures
-    CloudCoeff%n_Densities        = n_Densities
     CloudCoeff%Max_Legendre_Terms = n_Legendre_Terms
     CloudCoeff%n_Legendre_Terms   = n_Legendre_Terms 
     CloudCoeff%Max_Phase_Elements = n_Phase_Elements
     CloudCoeff%n_Phase_Elements   = n_Phase_Elements 
     ! ...Arrays
-    CloudCoeff%Frequency_MW = ZERO
-    CloudCoeff%Frequency_IR = ZERO
-    CloudCoeff%Reff_MW      = ZERO
-    CloudCoeff%Reff_IR      = ZERO
-    CloudCoeff%Temperature  = ZERO
-    CloudCoeff%Density      = ZERO
+    CloudCoeff%Frequency_MW       = ZERO
+    CloudCoeff%Frequency_IR       = ZERO
+    CloudCoeff%Water_Density_MW   = ZERO
+    CloudCoeff%Reff_MW            = ZERO
+    CloudCoeff%Reff_IR            = ZERO
+    CloudCoeff%Temperature        = ZERO
+    CloudCoeff%Density_MW         = ZERO
+    CloudCoeff%Density_IR         = ZERO
     
     CloudCoeff%ke_L_MW      = ZERO
     CloudCoeff%w_L_MW       = ZERO
     CloudCoeff%g_L_MW       = ZERO
+    CloudCoeff%kb_L_MW      = ZERO
     CloudCoeff%pcoeff_L_MW  = ZERO
     
     CloudCoeff%ke_S_MW      = ZERO
     CloudCoeff%w_S_MW       = ZERO
     CloudCoeff%g_S_MW       = ZERO
+    CloudCoeff%kb_S_MW      = ZERO
     CloudCoeff%pcoeff_S_MW  = ZERO
     
     CloudCoeff%ke_IR        = ZERO
     CloudCoeff%w_IR         = ZERO
     CloudCoeff%g_IR         = ZERO
+    CloudCoeff%kb_IR        = ZERO
     CloudCoeff%pcoeff_IR    = ZERO
 
 
@@ -476,10 +517,11 @@ CONTAINS
     ! Dimensions
     WRITE(*,'(3x,"n_MW_Frequencies :",1x,i0)') CloudCoeff%n_MW_Frequencies
     WRITE(*,'(3x,"n_MW_Radii       :",1x,i0)') CloudCoeff%n_MW_Radii
+    WRITE(*,'(3x,"n_MW_Densities      :",1x,i0)') CloudCoeff%n_MW_Densities
     WRITE(*,'(3x,"n_IR_Frequencies :",1x,i0)') CloudCoeff%n_IR_Frequencies
     WRITE(*,'(3x,"n_IR_Radii       :",1x,i0)') CloudCoeff%n_IR_Radii
+    WRITE(*,'(3x,"n_IR_Densities      :",1x,i0)') CloudCoeff%n_IR_Densities
     WRITE(*,'(3x,"n_Temperatures   :",1x,i0)') CloudCoeff%n_Temperatures
-    WRITE(*,'(3x,"n_Densities      :",1x,i0)') CloudCoeff%n_Densities
     WRITE(*,'(3x,"n_Legendre_Terms :",1x,i0)') CloudCoeff%n_Legendre_Terms
     WRITE(*,'(3x,"n_Phase_Elements :",1x,i0)') CloudCoeff%n_Phase_Elements
     IF ( .NOT. CloudCoeff_Associated(CloudCoeff) ) RETURN
@@ -489,15 +531,19 @@ CONTAINS
     WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Frequency_MW
     WRITE(*,'(5x,"CloudCoeff Frequency_IR:")') 
     WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Frequency_IR
+    WRITE(*,'(5x,"CloudCoeff Water_Density_MW     :")') 
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Water_Density_MW 
     WRITE(*,'(5x,"CloudCoeff Reff_MW     :")') 
     WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Reff_MW     
     WRITE(*,'(5x,"CloudCoeff Reff_IR     :")') 
     WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Reff_IR     
     WRITE(*,'(5x,"CloudCoeff Temperature :")') 
     WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Temperature 
-    WRITE(*,'(5x,"CloudCoeff Density     :")') 
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Density     
-
+    WRITE(*,'(5x,"CloudCoeff Density_MW     :")') 
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Density_MW    
+    WRITE(*,'(5x,"CloudCoeff Density_IR     :")') 
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Density_IR
+    
     ! Microwave data
     WRITE(*,'(/3x,"Microwave data...")')
     
@@ -510,6 +556,7 @@ CONTAINS
       WRITE(*,'(5x,"Microwave liquid phase mass extinction coefficients:")') 
       WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
       DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_L_MW(:,i,j)     
       END DO
@@ -523,6 +570,7 @@ CONTAINS
       WRITE(*,'(5x,"Microwave liquid phase single scatter albedo:")') 
       WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
       DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)')    CloudCoeff%Water_Density_MW(i)
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_L_MW(:,i,j)     
       END DO
@@ -536,11 +584,26 @@ CONTAINS
       WRITE(*,'(5x,"Microwave liquid phase asymmetry parameter:")') 
       WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
       DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_L_MW(:,i,j)     
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_L_MW(:,i,j) 
       END DO
     END DO
 
+    IF ( wait ) THEN
+      WRITE(*,'(/5x,"Press <ENTER> to view the microwave liquid phase backscattering parameter")')
+      READ(*,*) 
+    END IF
+    DO j = 1, CloudCoeff%n_Temperatures
+      WRITE(*,'(5x,"Microwave liquid phase backscatter parameter:")') 
+      WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
+      DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%kb_L_MW(:,i,j) 
+      END DO
+    END DO
+    
     DO m = 1, CloudCoeff%n_Stream_Sets
       IF ( wait ) THEN
         WRITE(*,'(/5x,"Press <ENTER> to view the ",i0,"-stream microwave liquid ",&
@@ -556,6 +619,7 @@ CONTAINS
           DO j = 1, CloudCoeff%n_Temperatures
             WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
             DO i = 1, CloudCoeff%n_MW_Radii
+              WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
               WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
               WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_L_MW(:,i,j,kidx,l)
             END DO
@@ -569,10 +633,11 @@ CONTAINS
       WRITE(*,'(/5x,"Press <ENTER> to view the microwave solid phase mass extinction coefficients")')
       READ(*,*) 
     END IF
-    DO j = 1, CloudCoeff%n_Densities
+    DO j = 1, CloudCoeff%n_MW_Densities
       WRITE(*,'(5x,"Microwave solid phase mass extinction coefficients:")') 
-      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density_MW         : ",es22.15)') CloudCoeff%Density_MW(j)
       DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_S_MW(:,i,j)     
       END DO
@@ -582,10 +647,11 @@ CONTAINS
       WRITE(*,'(/5x,"Press <ENTER> to view the microwave solid phase single scatter albedo")')
       READ(*,*) 
     END IF
-    DO j = 1, CloudCoeff%n_Densities
+    DO j = 1, CloudCoeff%n_MW_Densities
       WRITE(*,'(5x,"Microwave solid phase single scatter albedo:")') 
-      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density_MW         : ",es22.15)') CloudCoeff%Density_MW(j)
       DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_S_MW(:,i,j)     
       END DO
@@ -595,12 +661,27 @@ CONTAINS
       WRITE(*,'(/5x,"Press <ENTER> to view the microwave solid phase asymmetry parameter")')
       READ(*,*) 
     END IF
-    DO j = 1, CloudCoeff%n_Densities
+    DO j = 1, CloudCoeff%n_MW_Densities
       WRITE(*,'(5x,"Microwave solid phase asymmetry parameter:")') 
-      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density_MW         : ",es22.15)') CloudCoeff%Density_MW(j)
       DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_S_MW(:,i,j)     
+      END DO
+    END DO
+ 
+    IF ( wait ) THEN
+      WRITE(*,'(/5x,"Press <ENTER> to view the microwave solid phase backscattering parameter")')
+      READ(*,*) 
+    END IF
+    DO j = 1, CloudCoeff%n_MW_Densities
+      WRITE(*,'(5x,"Microwave solid phase backscatter parameter:")') 
+      WRITE(*,'(7x,"Density_MW         : ",es22.15)') CloudCoeff%Density_MW(j)
+      DO i = 1, CloudCoeff%n_MW_Radii
+        WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%kb_S_MW(:,i,j)     
       END DO
     END DO
     
@@ -616,9 +697,10 @@ CONTAINS
         DO k = 1, CloudCoeff%n_Streams(m)
           WRITE(*,'(7x,"Legendre term: ",i0)') k
           kidx = k + CloudCoeff%Legendre_Offset(m)
-          DO j = 1, CloudCoeff%n_Densities
-            WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+          DO j = 1, CloudCoeff%n_MW_Densities
+            WRITE(*,'(7x,"Density_MW        : ",es22.15)') CloudCoeff%Density_MW(j)
             DO i = 1, CloudCoeff%n_MW_Radii
+              WRITE(*,'(7x,"Water Content: ",es22.15)') CloudCoeff%Water_Density_MW(i)
               WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
               WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_S_MW(:,i,j,kidx,l)
             END DO
@@ -639,7 +721,7 @@ CONTAINS
     WRITE(*,'(5x,"Infrared liquid phase mass extinction coefficients:")') 
     DO i = 1, CloudCoeff%n_IR_Radii
       WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
-      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_IR(:,i,0)     
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_IR(:,i,1)     
     END DO
     
     IF ( wait ) THEN
@@ -649,7 +731,7 @@ CONTAINS
     WRITE(*,'(5x,"Infrared liquid phase single scatter albedo:")') 
     DO i = 1, CloudCoeff%n_IR_Radii
       WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
-      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_IR(:,i,0)     
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_IR(:,i,1)     
     END DO
 
     IF ( wait ) THEN
@@ -659,9 +741,19 @@ CONTAINS
     WRITE(*,'(5x,"Infrared liquid phase asymmetry parameter:")') 
     DO i = 1, CloudCoeff%n_IR_Radii
       WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
-      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_IR(:,i,0)     
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_IR(:,i,1)     
     END DO
 
+    IF ( wait ) THEN
+      WRITE(*,'(/5x,"Press <ENTER> to view the infrared liquid phase backscattering parameter")')
+      READ(*,*) 
+    END IF
+    WRITE(*,'(5x,"Infrared liquid phase asymmetry parameter:")') 
+    DO i = 1, CloudCoeff%n_IR_Radii
+      WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%kb_IR(:,i,1)     
+    END DO
+    
     DO m = 1, CloudCoeff%n_Stream_Sets
       IF ( wait ) THEN
         WRITE(*,'(/5x,"Press <ENTER> to view the ",i0,"-stream infrared liquid ",&
@@ -684,9 +776,9 @@ CONTAINS
       WRITE(*,'(/5x,"Press <ENTER> to view the infrared solid phase mass extinction coefficients")')
       READ(*,*) 
     END IF
-    DO j = 1, CloudCoeff%n_Densities
+    DO j = 1, CloudCoeff%n_IR_Densities
       WRITE(*,'(5x,"Infrared solid phase mass extinction coefficients:")') 
-      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density_IR         : ",es22.15)') CloudCoeff%Density_IR(j)
       DO i = 1, CloudCoeff%n_IR_Radii
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_IR(:,i,j)     
@@ -697,9 +789,9 @@ CONTAINS
       WRITE(*,'(/5x,"Press <ENTER> to view the infrared solid phase single scatter albedo")')
       READ(*,*) 
     END IF
-    DO j = 1, CloudCoeff%n_Densities
+    DO j = 1, CloudCoeff%n_IR_Densities
       WRITE(*,'(5x,"Infrared solid phase single scatter albedo:")') 
-      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density_IR         : ",es22.15)') CloudCoeff%Density_IR(j)
       DO i = 1, CloudCoeff%n_IR_Radii
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_IR(:,i,j)     
@@ -710,12 +802,25 @@ CONTAINS
       WRITE(*,'(/5x,"Press <ENTER> to view the infrared solid phase asymmetry parameter")')
       READ(*,*) 
     END IF
-    DO j = 1, CloudCoeff%n_Densities
+    DO j = 1, CloudCoeff%n_IR_Densities
       WRITE(*,'(5x,"Infrared solid phase asymmetry parameter:")') 
-      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density_IR         : ",es22.15)') CloudCoeff%Density_IR(j)
       DO i = 1, CloudCoeff%n_IR_Radii
         WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
         WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_IR(:,i,j)     
+      END DO
+    END DO
+    
+    IF ( wait ) THEN
+      WRITE(*,'(/5x,"Press <ENTER> to view the infrared solid phase backscatteringparameter")')
+      READ(*,*) 
+    END IF
+    DO j = 1, CloudCoeff%n_IR_Densities
+      WRITE(*,'(5x,"Infrared solid phase asymmetry parameter:")') 
+      WRITE(*,'(7x,"Density_IR         : ",es22.15)') CloudCoeff%Density_IR(j)
+      DO i = 1, CloudCoeff%n_IR_Radii
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%kb_IR(:,i,j)     
       END DO
     END DO
     
@@ -729,8 +834,8 @@ CONTAINS
       DO k = 1, CloudCoeff%n_Streams(m)
         WRITE(*,'(7x,"Legendre term: ",i0)') k
         kidx = k + CloudCoeff%Legendre_Offset(m)
-        DO j = 1, CloudCoeff%n_Densities
-          WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
+        DO j = 1, CloudCoeff%n_IR_Densities
+          WRITE(*,'(7x,"Density_IR         : ",es22.15)') CloudCoeff%Density_IR(j)
           DO i = 1, CloudCoeff%n_IR_Radii
             WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
             WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_IR(:,i,j,kidx)
@@ -859,7 +964,8 @@ CONTAINS
            &"N_RADII(MW)=",i2,2x,&
            &"N_RADII(IR)=",i2,2x,&
            &"N_TEMPERATURES=",i2,2x,&
-           &"N_DENSITIES=",i2,2x,&
+           &"N_MW_DENSITIES=",i2,2x,&
+           &"N_IR_DENSITIES=",i2,2x,&
            &"N_LEGENDRE_TERMS=",i2,2x,&
            &"N_PHASE_ELEMENTS=",i2 )' ) &
            ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
@@ -869,7 +975,8 @@ CONTAINS
            CloudCoeff%n_MW_Radii      , &
            CloudCoeff%n_IR_Radii      , &
            CloudCoeff%n_Temperatures  , &
-           CloudCoeff%n_Densities     , &
+           CloudCoeff%n_MW_Densities     , &
+           CloudCoeff%n_IR_Densities     , &
            CloudCoeff%n_Legendre_Terms, &
            CloudCoeff%n_Phase_Elements
                        
@@ -938,28 +1045,34 @@ CONTAINS
          (x%n_MW_Radii       /= y%n_MW_Radii      ) .OR. &
          (x%n_IR_Radii       /= y%n_IR_Radii      ) .OR. &
          (x%n_Temperatures   /= y%n_Temperatures  ) .OR. &
-         (x%n_Densities      /= y%n_Densities     ) .OR. &
+         (x%n_MW_Densities   /= y%n_MW_Densities  ) .OR. &
+         (x%n_IR_Densities   /= y%n_IR_Densities  ) .OR. &
          (x%n_Legendre_Terms /= y%n_Legendre_Terms) .OR. &
          (x%n_Phase_Elements /= y%n_Phase_Elements) ) RETURN
     ! ...Data
-    IF ( ALL(x%Frequency_MW .EqualTo. y%Frequency_MW ) .AND. &
-         ALL(x%Frequency_IR .EqualTo. y%Frequency_IR ) .AND. &
-         ALL(x%Reff_MW      .EqualTo. y%Reff_MW      ) .AND. &
-         ALL(x%Reff_IR      .EqualTo. y%Reff_IR      ) .AND. &
-         ALL(x%Temperature  .EqualTo. y%Temperature  ) .AND. &
-         ALL(x%Density      .EqualTo. y%Density      ) .AND. &
-         ALL(x%ke_L_MW      .EqualTo. y%ke_L_MW      ) .AND. &
-         ALL(x%w_L_MW       .EqualTo. y%w_L_MW       ) .AND. &
-         ALL(x%g_L_MW       .EqualTo. y%g_L_MW       ) .AND. &
-         ALL(x%pcoeff_L_MW  .EqualTo. y%pcoeff_L_MW  ) .AND. &
-         ALL(x%ke_S_MW      .EqualTo. y%ke_S_MW      ) .AND. &
-         ALL(x%w_S_MW       .EqualTo. y%w_S_MW       ) .AND. &
-         ALL(x%g_S_MW       .EqualTo. y%g_S_MW       ) .AND. &
-         ALL(x%pcoeff_S_MW  .EqualTo. y%pcoeff_S_MW  ) .AND. &
-         ALL(x%ke_IR        .EqualTo. y%ke_IR        ) .AND. &
-         ALL(x%w_IR         .EqualTo. y%w_IR         ) .AND. &
-         ALL(x%g_IR         .EqualTo. y%g_IR         ) .AND. &
-         ALL(x%pcoeff_IR    .EqualTo. y%pcoeff_IR    )       ) &
+    IF ( ALL(x%Frequency_MW     .EqualTo. y%Frequency_MW     ) .AND. &
+         ALL(x%Frequency_IR     .EqualTo. y%Frequency_IR     ) .AND. &
+         ALL(x%Water_Density_MW .EqualTo. y%Water_Density_MW ) .AND. &
+         ALL(x%Reff_MW          .EqualTo. y%Reff_MW          ) .AND. &
+         ALL(x%Reff_IR          .EqualTo. y%Reff_IR          ) .AND. &
+         ALL(x%Temperature      .EqualTo. y%Temperature      ) .AND. &
+         ALL(x%Density_MW       .EqualTo. y%Density_MW       ) .AND. &
+         ALL(x%Density_IR       .EqualTo. y%Density_IR       ) .AND. &
+         ALL(x%ke_L_MW          .EqualTo. y%ke_L_MW          ) .AND. &
+         ALL(x%w_L_MW           .EqualTo. y%w_L_MW           ) .AND. &
+         ALL(x%g_L_MW           .EqualTo. y%g_L_MW           ) .AND. &
+         ALL(x%kb_L_MW          .EqualTo. y%kb_L_MW           ) .AND. &
+         ALL(x%pcoeff_L_MW      .EqualTo. y%pcoeff_L_MW      ) .AND. &
+         ALL(x%ke_S_MW          .EqualTo. y%ke_S_MW          ) .AND. &
+         ALL(x%w_S_MW           .EqualTo. y%w_S_MW           ) .AND. &
+         ALL(x%g_S_MW           .EqualTo. y%g_S_MW           ) .AND. &
+         ALL(x%kb_S_MW          .EqualTo. y%kb_S_MW           ) .AND. &
+         ALL(x%pcoeff_S_MW      .EqualTo. y%pcoeff_S_MW      ) .AND. &
+         ALL(x%ke_IR            .EqualTo. y%ke_IR            ) .AND. &
+         ALL(x%w_IR             .EqualTo. y%w_IR             ) .AND. &
+         ALL(x%g_IR             .EqualTo. y%g_IR             ) .AND. &
+         ALL(x%kb_IR            .EqualTo. y%kb_IR             ) .AND. &
+         ALL(x%pcoeff_IR        .EqualTo. y%pcoeff_IR        )       ) &
       is_equal = .TRUE.
 
   END FUNCTION CloudCoeff_Equal

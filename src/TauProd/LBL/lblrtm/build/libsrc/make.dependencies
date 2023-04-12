@@ -18,5 +18,5 @@ LBLRTM_Phdr_IO.o : LBLRTM_Phdr_IO.f90 LBLRTM_Phdr_Define.o LBLRTM_Parameters.o F
 LBLRTM_netCDF_IO.o : LBLRTM_netCDF_IO.f90 LBLRTM_File_netCDF_IO.o LBLRTM_File_IO.o LBLRTM_File_Define.o Message_Handler.o Type_Kinds.o 
 Message_Handler.o : Message_Handler.f90 File_Utility.o 
 String_Utility.o : String_Utility.f90 
-LBLRTM_Utility.o : LBLRTM_Utility.fpp LBLRTM_Parameters.o File_Utility.o Message_Handler.o Type_Kinds.o 
-Type_Kinds.o : Type_Kinds.F90 
+LBLRTM_Utility.o : LBLRTM_Utility.F90 LBLRTM_Parameters.o File_Utility.o Message_Handler.o Type_Kinds.o 
+Type_Kinds.o : Type_Kinds.F90

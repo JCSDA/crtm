@@ -25,8 +25,9 @@ PROGRAM test_AD
   ! ----------
   ! Parameters
   ! ----------
+  CHARACTER(*), PARAMETER :: ENDIAN_TYPE='little_endian'
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'test_AD'
-  CHARACTER(*), PARAMETER :: COEFFICIENTS_PATH = './testinput/'
+  CHARACTER(*), PARAMETER :: COEFFICIENTS_PATH = 'coefficients/'//ENDIAN_TYPE//'/'! './testinput/'
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/unit/'
 
 
@@ -36,7 +37,7 @@ PROGRAM test_AD
   !
   ! Profile dimensions...
   INTEGER, PARAMETER :: N_PROFILES  = 2
-  INTEGER, PARAMETER :: N_LAYERS    = 72
+  INTEGER, PARAMETER :: N_LAYERS    = 92
   INTEGER, PARAMETER :: N_ABSORBERS = 2
   INTEGER, PARAMETER :: N_CLOUDS    = 0
   INTEGER, PARAMETER :: N_AEROSOLS  = 0
@@ -113,7 +114,7 @@ PROGRAM test_AD
   ! -----------------------
   !WRITE( *,'(/5x,"Enter sensor id [hirs4_n18, amsua_metop-a, or mhs_n18]: ")',ADVANCE='NO' )
   !READ( *,'(a)' ) Sensor_Id
-  Sensor_Id = 'amsua_metop-a'
+  Sensor_Id = 'atms_npp'
   Sensor_Id = ADJUSTL(Sensor_Id)
   WRITE( *,'(//5x,"Running CRTM for ",a," sensor...")' ) TRIM(Sensor_Id)
 

@@ -120,6 +120,7 @@ MODULE CSvar_Define
     TYPE(CSinterp_type), ALLOCATABLE :: csi(:,:)  ! I3 x I4
     ! The interpolation results
     REAL(fp), ALLOCATABLE :: ke(:,:)          ! I3 x I4  Mass extinction coefficient
+    REAL(fp), ALLOCATABLE :: kb(:,:)          ! I3 x I4  Mass backscattering coefficient
     REAL(fp), ALLOCATABLE :: w(:,:)           ! I3 x I4  Single Scatter Albedo
     REAL(fp), ALLOCATABLE :: g(:,:)           ! I3 x I4  Asymmetry factor
     REAL(fp), ALLOCATABLE :: pcoeff(:,:,:,:)  ! 0:I1 x I2 x I3 x I4  Phase coefficients
@@ -180,6 +181,7 @@ CONTAINS
     ! Perform the allocation
     ALLOCATE( self%csi(n_Layers, n_Clouds), &
               self%ke(n_Layers, n_Clouds), &
+              self%kb(n_Layers, n_Clouds), &
               self%w(n_Layers, n_Clouds), &
               self%g(n_Layers, n_Clouds), &
               self%pcoeff(0:n_Legendre_Terms,n_Phase_Elements,n_Layers, n_Clouds), &
@@ -219,6 +221,11 @@ CONTAINS
     DO i4 = 1, self%n_Clouds
       WRITE(*,'(5x,"ke Cloud index #",i0)') i4
       WRITE(*,'(5(1x,es22.15,:))') self%ke(:,i4)
+    END DO
+    WRITE(*,'(3x,"Mass backscattering coefficient (kb) :")')
+    DO i4 = 1, self%n_Clouds
+      WRITE(*,'(5x,"kb Cloud index #",i0)') i4
+      WRITE(*,'(5(1x,es22.15,:))') self%kb(:,i4)
     END DO
     WRITE(*,'(3x,"Single scatter albedo (w) :")')
     DO i4 = 1, self%n_Clouds
@@ -563,6 +570,13 @@ CONTAINS
       msg = 'Error reading mass extinction coefficient - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
+    ! ...Mass extinction coefficient
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      CSvar%kb
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading backscattering coefficient - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
     ! ...Single scatter albedo
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       CSvar%w
@@ -738,6 +752,13 @@ CONTAINS
       msg = 'Error writing mass extinction coefficient - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
+    ! ...Mass backscattering coefficient
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      CSvar%kb
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing mass backscattering coefficient - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
     ! ...Single scatter albedo
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       CSvar%w
@@ -829,6 +850,7 @@ CONTAINS
          (x%n_Clouds         /= y%n_Clouds         ) ) RETURN
     ! ...Arrays
     IF ( ALL(x%ke       .EqualTo. y%ke       ) .AND. &
+         ALL(x%kb       .EqualTo. y%kb       ) .AND. &
          ALL(x%w        .EqualTo. y%w        ) .AND. &
          ALL(x%g        .EqualTo. y%g        ) .AND. &
          ALL(x%pcoeff   .EqualTo. y%pcoeff   ) .AND. &

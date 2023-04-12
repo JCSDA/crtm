@@ -20,6 +20,14 @@
 !       Modifed by:     Yong Han, NESDIS/STAR 10-July-2008
 !                       yong.han@noaa.gov
 !
+! Record of Revisions:
+! ====================
+!
+! Date:          Author:            Description:
+! =====          =======            ============
+! 2021-07-23     P. Stegmann        Integrated netCDF I/O.
+!
+!
 MODULE ODPS_TauCoeff
 
   ! -----------------
@@ -29,7 +37,8 @@ MODULE ODPS_TauCoeff
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE ODPS_Define       , ONLY: ODPS_TauCoeff_type    => ODPS_type, &          
                                 ODPS_Destroy_TauCoeff => Destroy_ODPS        
-  USE ODPS_Binary_IO    , ONLY: Read_TauCoeff_Binary  => Read_ODPS_Binary
+  USE ODPS_Binary_IO    , ONLY: Read_ODPS_Binary
+  USE ODPS_netCDF_IO    , ONLY: Read_ODPS_netCDF
 
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -69,7 +78,8 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Load_TauCoeff( Sensor_ID        =Sensor_ID,         &  ! Optional input
 !                                     File_Path        =File_Path,         &  ! Optional input      
-!                                     Quiet            =Quiet,             &  ! Optional input      
+!                                     Quiet            =Quiet,             &  ! Optional input
+!                                     netCDF           =netCDF,            &  ! Optional input      
 !                                     Process_ID       =Process_ID,        &  ! Optional input      
 !                                     Output_Process_ID=Output_Process_ID, &  ! Optional input      
 !                                     Message_Log      =Message_Log        )  ! Error messaging     
@@ -107,6 +117,16 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       netCDF:             Set this argument to switch from binary to netCDF
+!                           I/O for ODPS files.
+!                           If netCDF = .FALSE., Binary file is loaded.
+!                              netCDF = .TRUE., netCDF file is loaded.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !
 !       Process_ID:         Set this argument to the MPI process ID that this
 !                           function call is running under. This value is used
@@ -160,7 +180,8 @@ CONTAINS
 
   FUNCTION Load_TauCoeff( Sensor_ID        , &  ! Input
                           File_Path        , &  ! Optional input      
-                          Quiet            , &  ! Optional input      
+                          Quiet            , &  ! Optional input
+                          netCDF           , &  ! Optional input      
                           Process_ID       , &  ! Optional input      
                           Output_Process_ID, &  ! Optional input      
                           Message_Log      ) &  ! Error messaging     
@@ -169,6 +190,7 @@ CONTAINS
     CHARACTER(*), DIMENSION(:), OPTIONAL, INTENT(IN) :: Sensor_ID
     CHARACTER(*),               OPTIONAL, INTENT(IN) :: File_Path
     INTEGER,                    OPTIONAL, INTENT(IN) :: Quiet
+    LOGICAL,                    OPTIONAL, INTENT(IN) :: netCDF
     INTEGER,                    OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER,                    OPTIONAL, INTENT(IN) :: Output_Process_ID
     CHARACTER(*),               OPTIONAL, INTENT(IN) :: Message_Log
@@ -182,6 +204,7 @@ CONTAINS
     CHARACTER(256) :: TauCoeff_File
     INTEGER :: Allocate_Status
     INTEGER :: n, n_Sensors
+    LOGICAL :: binary 
 
     ! Set up
     Error_Status = SUCCESS
@@ -192,6 +215,9 @@ CONTAINS
     ELSE
       Process_ID_Tag = ' '
     END IF
+    ! ...Check netCDF argument
+    binary = .TRUE.
+    IF ( PRESENT(netCDF) ) binary = .NOT. netCDF
 
     ! Determine the number of sensors and construct their filenames
     IF ( PRESENT(Sensor_ID) ) THEN
@@ -218,10 +244,18 @@ CONTAINS
     DO n = 1, n_Sensors
     
       IF ( PRESENT(Sensor_ID) ) THEN
-          TauCoeff_File = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.bin'
+          IF ( .NOT. binary ) THEN
+            TauCoeff_File = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.nc'
+          ELSE
+            TauCoeff_File = TRIM(ADJUSTL(Sensor_ID(n)))//'.TauCoeff.bin'
+          END IF 
       ELSE
-        ! No sensors specified. Use default filename.
-        TauCoeff_File = 'TauCoeff.bin'
+        IF ( .NOT. binary ) THEN
+          ! No sensors specified. Use default filename.
+          TauCoeff_File = 'TauCoeff.nc'
+        ELSE
+          TauCoeff_File = 'TauCoeff.bin'
+        END IF 
       END IF
     
       ! Add the file path
@@ -229,21 +263,37 @@ CONTAINS
         TauCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(TauCoeff_File)
       END IF
       
-      Error_Status = Read_TauCoeff_Binary( TRIM(TauCoeff_File)             , &  ! Input
-                                           TC(n)                              , &  ! Output
-                                           Quiet            =Quiet            , &
-                                           Process_ID       =Process_ID       , &
-                                           Output_Process_ID=Output_Process_ID, &
-                                           Message_Log      =Message_Log        )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE(Message,'("Error reading TauCoeff file #",i0,", ",a)') &
-                      n, TRIM(TauCoeff_File)
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message)//TRIM(Process_ID_Tag), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
+      IF ( .NOT. binary ) THEN
+        Error_Status = Read_ODPS_netCDF( TRIM(TauCoeff_File)             , &  ! Input
+                                             TC(n)                              , &  ! Output
+                                             Quiet            =Quiet            , &
+                                             Message_Log      =Message_Log        )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE(Message,'("Error reading TauCoeff file #",i0,", ",a)') &
+                        n, TRIM(TauCoeff_File)
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(Message)//TRIM(Process_ID_Tag), &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          RETURN
+        END IF
+      ELSE 
+        Error_Status = Read_ODPS_Binary( TRIM(TauCoeff_File)             , &  ! Input
+                                             TC(n)                              , &  ! Output
+                                             Quiet            =Quiet            , &
+                                             Process_ID       =Process_ID       , &
+                                             Output_Process_ID=Output_Process_ID, &
+                                             Message_Log      =Message_Log        )
+        IF ( Error_Status /= SUCCESS ) THEN
+          WRITE(Message,'("Error reading TauCoeff file #",i0,", ",a)') &
+                        n, TRIM(TauCoeff_File)
+          CALL Display_Message( ROUTINE_NAME, &
+                                TRIM(Message)//TRIM(Process_ID_Tag), &
+                                Error_Status, &
+                                Message_Log=Message_Log )
+          RETURN
+        END IF
+      END IF 
     END DO
 
   END FUNCTION Load_TauCoeff 

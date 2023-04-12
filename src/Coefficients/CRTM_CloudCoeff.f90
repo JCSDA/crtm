@@ -2,7 +2,7 @@
 ! CRTM_CloudCoeff
 !
 ! Module containing the shared CRTM scattering coefficient data
-! (CloudCoeff) and their load/destruction routines. 
+! (CloudCoeff) and their load/destruction routines.
 !
 ! PUBLIC DATA:
 !       CloudC:  Data structure containing the cloud bulk optical
@@ -30,9 +30,13 @@ MODULE CRTM_CloudCoeff
   USE Message_Handler,      ONLY: SUCCESS, FAILURE, Display_Message
   USE CloudCoeff_Define,    ONLY: CloudCoeff_type, &
                                   CloudCoeff_Associated, &
-                                  CloudCoeff_Destroy                  
-  USE CloudCoeff_Binary_IO, ONLY: CloudCoeff_Binary_ReadFile
-  USE CloudCoeff_netCDF_IO, ONLY: CloudCoeff_netCDF_ReadFile
+                                  CloudCoeff_Destroy, &
+                                  INVALID_CLOUDCOEFF, &
+                                  MIE_TAMU_CLOUDCOEFF, &
+                                  DDA_ARTS_CLOUDCOEFF
+                                 
+  USE CloudCoeff_IO       , ONLY: CloudCoeff_ReadFile
+
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -42,6 +46,11 @@ MODULE CRTM_CloudCoeff
   ! ------------
   ! Everything private by default
   PRIVATE
+  ! The shared variables
+  PUBLIC :: INVALID_CLOUDCOEFF
+  PUBLIC :: MIE_TAMU_CLOUDCOEFF
+  PUBLIC :: DDA_ARTS_CLOUDCOEFF
+                                  
   ! The shared data
   PUBLIC :: CloudC
   ! Procedures
@@ -79,9 +88,9 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_CloudCoeff_Load( &
 !                        Cloud_Model , &
-!                        CloudCoeff_IO , &
 !                        Filename , &
 !                        File_Path         = File_Path        , &
+!                        netCDF            = netCDF           , &
 !                        Quiet             = Quiet            , &
 !                        Process_ID        = Process_ID       , &
 !                        Output_Process_ID = Output_Process_ID  )
@@ -123,6 +132,15 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       netCDF:             Set this logical argument to specify file format.
+!                           If == .FALSE., Binary [DEFAULT].
+!                              == .TRUE.,  netCDF
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Quiet:              Set this logical argument to suppress INFORMATION
 !                           messages being printed to stdout
 !                           If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
@@ -146,7 +164,7 @@ CONTAINS
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
 !                           all INFORMATION messages are to be output. If
 !                           the passed Process_ID value agrees with this value
-!                           the INFORMATION messages are output. 
+!                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
 !                           is set.
 !                           UNITS:      N/A
@@ -171,20 +189,20 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_CloudCoeff_Load( &
-    Cloud_Model      , &  ! Input 
-    CloudCoeff_IO    , &  ! Input
+    Cloud_Model      , &  ! Input
     Filename         , &  ! Input
     File_Path        , &  ! Optional input
+    netCDF           , &  ! Optional input
     Quiet            , &  ! Optional input
     Process_ID       , &  ! Optional input
     Output_Process_ID) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: Cloud_Model
-    CHARACTER(*),           INTENT(IN) :: CloudCoeff_IO
     CHARACTER(*),           INTENT(IN) :: Filename
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
-    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
+    LOGICAL,      OPTIONAL, INTENT(IN) :: netCDF
+    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
     ! Function result
@@ -195,8 +213,10 @@ CONTAINS
     CHARACTER(ML) :: msg, pid_msg
     CHARACTER(ML) :: CloudCoeff_File
     LOGICAL :: noisy
+    ! Function variables
+    LOGICAL :: Binary
 
-    ! Setup 
+    ! Setup
     err_stat = SUCCESS
     ! ...Assign the filename to local variable
     CloudCoeff_File = ADJUSTL(Filename)
@@ -215,40 +235,30 @@ CONTAINS
     ELSE
       pid_msg = ''
     END IF
-    
+    ! ...Check netCDF argument
+    Binary = .TRUE.
+    IF ( PRESENT(netCDF) ) Binary = .NOT. netCDF
+
+
     ! Read the CloudCoeff data file
-    IF ( TRIM(Cloud_Model) == 'CRTM' ) THEN
-      IF ( TRIM(CloudCoeff_IO) == 'Binary' ) THEN
-        WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
-        err_stat = CloudCoeff_Binary_ReadFile( &
-                     CloudCoeff_File, &
-                     CloudC, &
-                     Quiet = .NOT. noisy )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
-          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-          RETURN
-        END IF 
-      ELSEIF ( TRIM(CloudCoeff_IO) == 'netCDF' ) THEN
-        WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
-        err_stat = CloudCoeff_netCDF_ReadFile( &
-                     CloudCoeff_File, &
-                     CloudC, &
-                     Quiet = .NOT. noisy )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
-          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-          RETURN
-        END IF
-      ELSE
-          WRITE( msg,'("Invalid CloudCoeff format: ",a)') TRIM(CloudCoeff_IO)
-          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )     
-      END IF ! CloudCoeff_IO 
-    ELSE
-      WRITE( msg,'("Error reading CloudCoeff from model:  ",a)') TRIM(Cloud_Model)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF !Cloud_Model
+    err_stat = CloudCoeff_ReadFile( &
+                 CloudCoeff_File, &
+                 CloudC, &
+                 netCDF = .NOT. Binary, &
+                 Quiet  = .NOT. noisy )
+     IF ( err_stat /= SUCCESS ) THEN
+       WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
+       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+       RETURN
+     END IF
+
+  CONTAINS
+
+    SUBROUTINE Load_CleanUp()
+      CALL CloudCoeff_Destroy( CloudC )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+    END SUBROUTINE Load_CleanUp
 
   END FUNCTION CRTM_CloudCoeff_Load
 

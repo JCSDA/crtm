@@ -95,7 +95,6 @@ LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
 	                     "FCFLAGS= -c \
                                        -fbounds-check \
                                        -fimplicit-none \
-                                       -fconvert=big-endian \
                                        -ffpe-trap=overflow,zero,invalid \
                                        -ffree-form \
                                        -fno-second-underscore \
@@ -119,7 +118,6 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
 	                    "FCFLAGS= -c \
                                       -O3 \
                                       -fimplicit-none \
-                                      -fconvert=big-endian \
                                       -ffast-math \
                                       -ffree-form \
                                       -fno-second-underscore \
@@ -202,7 +200,6 @@ LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                           "FCFLAGS= -c \
                                     -g \
                                     -check bounds \
-                                    -convert big_endian \
                                     -stand f08 \
                                     -traceback \
                                     -free \
@@ -222,7 +219,6 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
 	                 "FL=${NAME_INTEL}" \
 	                 "FCFLAGS= -c \
                                    -O2 \
-                                   -convert big_endian \
                                    -stand f08 \
                                    -free \
       	                           -assume byterecl,realloc_lhs \

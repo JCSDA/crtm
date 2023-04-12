@@ -28,8 +28,8 @@ MODULE LBLRTM_Layer_netCDF_IO
                                    LBLRTM_Layer_Create    , &
                                    LBLRTM_Layer_Inspect
   USE LBLRTM_Fhdr_netCDF_IO, ONLY: LBLRTM_Fhdr_netCDF_WriteGroup, &
-                                   LBLRTM_Fhdr_netCDF_ReadGroup , &
-                                   LBLRTM_Fhdr_netCDF_IOVersion
+                                   LBLRTM_Fhdr_netCDF_ReadGroup !, &
+                                   !LBLRTM_Fhdr_netCDF_IOVersion
   USE netcdf
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -41,13 +41,13 @@ MODULE LBLRTM_Layer_netCDF_IO
   ! Procedures
   PUBLIC :: LBLRTM_Layer_netCDF_WriteGroup
   PUBLIC :: LBLRTM_Layer_netCDF_ReadGroup
-  PUBLIC :: LBLRTM_Layer_netCDF_IOVersion
+  !PUBLIC :: LBLRTM_Layer_netCDF_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = 'Dummy'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
@@ -390,10 +390,10 @@ CONTAINS
   !------------------------------------------------
   ! Subroutine to return module version information
   !------------------------------------------------
-  SUBROUTINE LBLRTM_Layer_netCDF_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Layer_netCDF_IOVersion
+  !SUBROUTINE LBLRTM_Layer_netCDF_IOVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Layer_netCDF_IOVersion
 
 
 !################################################################################

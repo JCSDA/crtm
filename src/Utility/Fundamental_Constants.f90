@@ -166,6 +166,12 @@ MODULE Fundamental_Constants
   ! -------------------------------------------------
   REAL(fp), PARAMETER, PUBLIC :: MOLAR_GAS_CONSTANT = 8.314472_fp
 
+  ! -------------------------------------------------
+  ! Dry air gas constant
+  ! Symbol:R,  Units:J/kg/K
+  ! -------------------------------------------------
+  REAL(fp), PARAMETER, PUBLIC :: DRY_AIR_GAS_CONSTANT = 287_fp
+
   ! --------------------------------------------
   ! Boltzmann constant
   ! Symbol:k,  Units:J/K,  Rel.Uncert.(ppm): 1.7

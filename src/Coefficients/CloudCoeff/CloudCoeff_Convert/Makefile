@@ -31,8 +31,10 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/include
-LIBRARIES = -L$(HOME)/local/lib -lnetcdff
+INCLUDES  = -I$(NC4_DIR)/include \
+            -I$(HDF_DIR)/include
+LIBRARIES = -L$(NC4_DIR)/lib -lnetcdf -lnetcdff \
+            -L$(HDF_DIR)/lib -lhdf5
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets

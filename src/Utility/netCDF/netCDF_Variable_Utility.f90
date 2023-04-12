@@ -209,7 +209,7 @@ MODULE netCDF_Variable_Utility
   ! -----------------
 
   ! -- Module RCS Id string
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = 'Placeholder'
 
 
 CONTAINS

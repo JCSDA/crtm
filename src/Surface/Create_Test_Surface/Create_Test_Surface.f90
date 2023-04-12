@@ -46,7 +46,7 @@ PROGRAM Create_Test_Surface
   INTEGER :: Error_Status
   TYPE(CRTM_Surface_type) :: Surface(N_PROFILES)
 
-                                                           
+
   ! Output header
   ! -------------
   CALL Program_Message( PROGRAM_NAME, &
@@ -80,7 +80,7 @@ PROGRAM Create_Test_Surface
   Surface(1)%Snow_Temperature = 270.0_fp
   Surface(1)%Snow_Depth       = 20.0_fp
   Surface(1)%Snow_Density     = 0.25_fp
-  Surface(1)%Snow_Grain_Size  = 1.5_fp
+  Surface(1)%Snow_Grain_Size  = 1.5e3_fp
 
 
   ! Profile 2: Mid-latitude summer
@@ -109,7 +109,7 @@ PROGRAM Create_Test_Surface
   Surface(2)%Snow_Temperature = 270.0_fp
   Surface(2)%Snow_Depth       = 20.0_fp
   Surface(2)%Snow_Density     = 0.25_fp
-  Surface(2)%Snow_Grain_Size  = 1.5_fp
+  Surface(2)%Snow_Grain_Size  = 1.5e3_fp
 
 
   ! Profile 3: Mid-latitude winter
@@ -138,7 +138,7 @@ PROGRAM Create_Test_Surface
   Surface(3)%Snow_Temperature = 265.0_fp
   Surface(3)%Snow_Depth       = 100.0_fp
   Surface(3)%Snow_Density     = 0.1_fp
-  Surface(3)%Snow_Grain_Size  = 0.5_fp
+  Surface(3)%Snow_Grain_Size  = 0.5e3_fp
   ! Ice surface type data
   Surface(3)%Ice_Type        = FRESH_ICE
   Surface(3)%Ice_Temperature = 265.0_fp
@@ -173,7 +173,7 @@ PROGRAM Create_Test_Surface
   Surface(4)%Snow_Temperature = 270.0_fp
   Surface(4)%Snow_Depth       = 200.0_fp
   Surface(4)%Snow_Density     = 0.18_fp
-  Surface(4)%Snow_Grain_Size  = 1.0_fp
+  Surface(4)%Snow_Grain_Size  = 1.0e3_fp
   ! Ice surface type data
   Surface(4)%Ice_Type        = FRESH_ICE
   Surface(4)%Ice_Temperature = 260.0_fp
@@ -208,7 +208,7 @@ PROGRAM Create_Test_Surface
   Surface(5)%Snow_Temperature = 265.0_fp
   Surface(5)%Snow_Depth       = 400.0_fp
   Surface(5)%Snow_Density     = 0.1_fp
-  Surface(5)%Snow_Grain_Size  = 0.5_fp
+  Surface(5)%Snow_Grain_Size  = 0.5e3_fp
   ! Ice surface type data
   Surface(5)%Ice_Type        = FRESH_ICE
   Surface(5)%Ice_Temperature = 255.0_fp
@@ -243,7 +243,7 @@ PROGRAM Create_Test_Surface
   Surface(6)%Snow_Temperature = 268.0_fp
   Surface(6)%Snow_Depth       = 60.0_fp
   Surface(6)%Snow_Density     = 0.2_fp
-  Surface(6)%Snow_Grain_Size  = 1.0_fp
+  Surface(6)%Snow_Grain_Size  = 1.0e3_fp
   ! Ice surface type data
   Surface(6)%Ice_Type        = FRESH_ICE
   Surface(6)%Ice_Temperature = 265.0_fp

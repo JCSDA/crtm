@@ -51,13 +51,13 @@ MODULE LBLRTM_File_IO
   ! Procedures
   PUBLIC :: LBLRTM_File_Read
   PUBLIC :: LBLRTM_File_Write
-  PUBLIC :: LBLRTM_File_IOVersion
+  !PUBLIC :: LBLRTM_File_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -423,9 +423,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_File_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_File_IOVersion
+  !SUBROUTINE LBLRTM_File_IOVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_File_IOVersion
 
 END MODULE LBLRTM_File_IO

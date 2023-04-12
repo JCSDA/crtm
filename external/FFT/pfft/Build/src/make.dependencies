@@ -1,0 +1,3 @@
+fft.o : fft.f90 pfft.o 
+pfft.o : pfft.f90 pkind.o 
+pkind.o : pkind.f90 

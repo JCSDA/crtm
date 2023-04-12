@@ -1,6 +1,70 @@
-Release Notes: CRTM library v2.4.0-alpha
+Release Notes: CRTM library v2.4.1
+v2.4.1 released April 28, 2022
 
-v2.4.0-alpha - released October 16, 2020
+* New Features / Science
+
+  1. Aerosol Coefficient tables (see fix/AerosolCoeff).
+     1) GOCART-GEOS5: GOCART-GEOS5 based Aerosols and Radiance/AOD simulation capability.
+     2) NAAPS: NAAPS based Aerosols and Radiance/AOD simulation capability. 
+  2. IR Water Emissivity tables (see fix/EmisCoeff/IR Water).
+     IRSSEv2.2: temperature dependent infrared water emissivity calculations. See tables Nalli2.IRwater.EmisCoeff (.bin or .nc4)
+
+* Software Improvements
+
+  1. OpenMP Parallelization across channels and profiles fully supported in forward and k_matrix (missing in TL and AD codes)
+  2. netCDF Interface Support for netCDF4 file format reading:
+    NPOESS.VISice.EmisCoeff.nc4
+    NPOESS.VISsnow.EmisCoeff.nc4
+    NPOESS.VISland.EmisCoeff.nc4
+    NPOESS.VISwater.EmisCoeff.nc4
+    NPOESS.IRice.EmisCoeff.nc4
+    NPOESS.IRsnow.EmisCoeff.nc4
+    NPOESS.IRland.EmisCoeff.nc4
+    Nalli.IRwater.EmisCoeff.nc4
+    WuSmith.IRwater.EmisCoeff.nc4
+
+* Unit Tests
+
+  Added various regression and unit tests, see README.md
+
+* Interface Changes
+
+  1. CRTM aerosol scheme Renamed the default aerosol lookup table from GOCART (version 2.4.0) into CRTM. Added GOCART-GEOS5 and NAAPS as optional aerosol schemes.
+  Surface emissivity/reflectivity Enabled netCDF I/O for the default surface emissivity and reflectivity look-up tables in infrared and visible bands.
+  2. CRTM Init() Added optional arguments in CRTM Init() function to specify the format and name of surface emissivity look-up tables.
+
+* Structural Changes
+
+  1. Added relative humidity in data structure CRTM Atmosphere type. Atmospheric RH profile is required for CRTM simulations. 
+  2. Changes to AerosolCoeff Define.f90: Added relative humidity (RH) dimension in data structure AerosolCoeff type. Set the valid release number of aerosol coefficient lookup tables to 4 (AEROSOLCOEFF RELEASE = 4).
+  3. Changes to IRwaterCoeff Define.f90: Added temperature dimension in data structure IRwaterCoeff type. Set the valid release number of IR water emissivity lookup tables to 4 (IRWATERCOEFF RELEASE = 4).
+  4. Changes to CRTM IR Water SfcOptics.f90 and CRTM IRSSEM.f90: Added Surface%Water Temperature for IR water emissivity calculations required in the Forward, TL, and AD modules.
+  5. Relocated unused emissivity codes EmisCoeff *.f90, folders EmisCoeff NC2BIN and Test EmisCoeff from folder src/Coefficients/EmisCoeff/IR Water to folder src/Coefficients/EmisCoeff/EmisCoeff.
+
+* Bug Fixes
+
+  Phase Function Coefficient Bugfix A bug with the number of Legendre terms used for phase function re-constructions, for two-stream cases, has been fixed.
+
+* Coefficients (relevant netCDF files forthcoming):
+
+  ftp.ucar.edu/pub/cpaess/bjohns/fix_REL-2.4.1_latest.tgz
+
+  SpcCoeff:
+    abi_g18.SpcCoeff.bin
+    atms-ng_v1.SpcCoeff.bin
+    mwi_eps-sg_v1.SpcCoeff.bin
+    tropics_sv1_srf_v3.SpcCoeff.bin
+    mhs_metop-c_v2.SpcCoeff.bin
+
+  TauCoeff:
+    abi_g18.TauCoeff.bin
+    atms-ng_v1.TauCoeff.bin
+    mwi_eps-sg_v1.TauCoeff.bin
+    tropics_sv1_srf_v3.TauCoeff.bin
+		(for mhs_metop-c_v2, use mhs_metop-c TauCoeff, or rename mhs_metop-c_v2 SpcCoeff to mhs_metop-c ) 
+
+
+v2.4.0 released October 29, 2020
  * New Features:
    1. Support for netCDF4 file format reading: CloudCoeff.nc4 and AerosolCoeff.nc4
    2. OpenMP optimization support (see setup/ifort.setup, for example), optimizes profile loop only.  
@@ -19,7 +83,9 @@ v2.4.0-alpha - released October 16, 2020
       radiance and brightness temperature calculations (but not aerosol contribution).
    8. Improved loop-level performance: 4 to 5 times native improvement by optimizing loops.
    9. Various minor bug fixes relating to uninitialized variables, improper zeroing, etc.
+  10. The pyCRTM interface to CRTM is available (github.com/JCSDA/pycrtm)
 
+Github integration, ecbuild build system, and unit test environment
  * New/Updated Coefficients:
    1.  Earth Observing Nanosatellite-Microwave: eon_mw.v1
    2.  Sentinel-3A Sea and Land Surface Temperature Radiometer: slstr_sentinel3a

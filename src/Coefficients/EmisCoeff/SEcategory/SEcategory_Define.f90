@@ -1634,20 +1634,20 @@ CONTAINS
     ! Check the object association status
     IF ( (.NOT. SEcategory_Associated(x)) .OR. &
          (.NOT. SEcategory_Associated(y))      ) RETURN
-
-   ! Check contents
+    ! Check contents
     ! ...Release/version info
     IF ( (x%Release /= y%Release) .OR. &
          (x%Version /= y%Version) ) RETURN
-    ! ...Classification name
+    !...Classification name
     IF ( (x%Classification_Name /= y%Classification_Name) ) RETURN
     ! ...Dimensions
     IF ( (x%n_Frequencies   /= y%n_Frequencies   ) .OR. &
          (x%n_Surface_Types /= y%n_Surface_Types ) ) RETURN
     ! ...Arrays
-    IF ( ALL(x%Frequency    .EqualTo. y%Frequency    ) .AND. &
-         ALL(x%Surface_Type     ==    y%Surface_Type ) .AND. &
-         ALL(x%Reflectance  .EqualTo. y%Reflectance  ) ) &
+    IF ( ALL(x%Frequency            .EqualTo. y%Frequency    ) .AND. &
+         ALL(x%Surface_Type           ==      y%Surface_Type ) .AND. &
+         ALL(x%Surface_Type_IsValid  .EQV.    y%Surface_Type_IsValid ) .AND. &
+         ALL(x%Reflectance          .EqualTo. y%Reflectance  ) ) &
       is_equal = .TRUE.
 
   END FUNCTION SEcategory_Equal

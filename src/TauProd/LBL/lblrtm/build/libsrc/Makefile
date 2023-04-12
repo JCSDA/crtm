@@ -9,16 +9,16 @@ tarname = lblrtmio
 distdir = $(tarname)_$(version)
 
 # Prefix-specific substitution variables
-prefix = /usr/local
+prefix = /scratch/users/pstegmann/workspace/crtm/src/TauProd/LBL/lblrtm/build
 
 # Mixed package and prefix substitution variables
 installdir = $(prefix)/$(distdir)
 
 # Tool-specific substitution variables
-FC       = gfortran
-FCFLAGS  = -fdefault-real-8 -g -O2 -ffree-form -I/usr/include -c
+FC       = ifort
+FCFLAGS  = -r8 -i4 -g -FR -I/opt/netcdf4/4.6.2-intel-18.0.3/include -c
 FPPFLAGS = -DREAL_SIZE=8 -DINT_SIZE=4
-LDFLAGS  =  -L/usr/lib
+LDFLAGS  =  -L/opt/netcdf4/4.6.2-intel-18.0.3/lib
 LIBS     =  -lnetcdff
 AR       = ar
 ARFLAGS  = crvs
@@ -76,9 +76,12 @@ include make.dependencies
 
 # Suffix rules
 .SUFFIXES:
-.SUFFIXES: .fpp .f90 .o
+.SUFFIXES: .fpp .f90 .F90 .o
 .fpp.o:
 	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $<
 
 .f90.o:
 	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $<
+
+.F90.o:
+	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $<

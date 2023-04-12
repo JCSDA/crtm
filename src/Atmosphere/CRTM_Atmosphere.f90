@@ -8,6 +8,11 @@
 !       Written by:     Paul van Delst, 29-Oct-2007
 !                       paul.vandelst@noaa.gov
 !
+!                      Isaac Moradi     isaac.moradi@nasa.gov
+!                      30-Nov-2021
+!                      Modified the code to avoid adding layers when
+!                      Add_Extra_Layers is set to .FALSE.
+!
 
 MODULE CRTM_Atmosphere
 
@@ -30,6 +35,7 @@ MODULE CRTM_Atmosphere
                                     CRTM_Atmosphere_Zero
   USE CRTM_Model_Profiles   , ONLY: MODEL_LEVEL_PRESSURE, & 
                                     CRTM_Get_Model_Profile
+  USE CRTM_Hypsometric,       ONLY: HypsometricEq
   ! ...Internal variable definition module
   USE iAtm_Define,            ONLY: iAtm_type      , &
                                     iAtm_Associated, &
@@ -58,6 +64,9 @@ MODULE CRTM_Atmosphere
   PUBLIC :: CRTM_Atmosphere_ClearSkyCopy
   PUBLIC :: CRTM_Atmosphere_ClearSkyCopy_TL
   PUBLIC :: CRTM_Atmosphere_ClearSkyCopy_AD
+
+  PUBLIC :: HypsometricEq
+
   ! iAtm entities
   ! ...Structure
   PUBLIC :: iAtm_type      
@@ -257,6 +266,12 @@ CONTAINS
     err_stat = SUCCESS
 
 
+    IF (.NOT. Atm_In%Add_Extra_Layers) THEN
+        ! This will just copy Atm_In to Atm_Out
+        Atm_Out = CRTM_Atmosphere_AddLayerCopy(Atm_In, 0)
+        RETURN
+    END IF    
+
     ! If extra layers are NOT needed,
     ! then simply copy the structure
     IF ( Atm_In%Level_Pressure(0) <= TOA_PRESSURE) THEN
@@ -367,6 +382,7 @@ CONTAINS
         Atm_Out%Cloud(i)%Effective_Radius(1:n)   = ZERO
         Atm_Out%Cloud(i)%Effective_Variance(1:n) = ZERO
         Atm_Out%Cloud(i)%Water_Content(1:n)      = ZERO
+        Atm_Out%Cloud(i)%Water_Density(1:n)      = ZERO
       END DO
     END IF
     ! ...Aerosols
@@ -456,6 +472,11 @@ CONTAINS
     ! Set up
     err_stat = SUCCESS
 
+    IF (.NOT. Atm_In%Add_Extra_Layers) THEN
+        ! This will just copy Atm_In_TL to Atm_Out_TL
+        atm_out_TL = CRTM_Atmosphere_AddLayerCopy( Atm_In_TL, 0 )
+        RETURN
+    END IF  
 
     ! If extra layers are NOT needed,
     ! then simply copy the structure
@@ -565,15 +586,15 @@ CONTAINS
 
     ! Set up
     err_stat = SUCCESS
-
-
+    
     ! If extra layers are NOT needed, then simply perform
     ! the adjoint sum. Remember the TL form is
     !   Atm_Out_TL = Atm_In_TL
     ! so the adjoint form is
     !   Atm_In_AD  = Atm_In_AD + Atm_Out_AD
     !   Atm_Out_AD = ZERO
-    IF ( Atm_In%Level_Pressure(0) <= TOA_PRESSURE) THEN
+    IF (( Atm_In%Level_Pressure(0) <= TOA_PRESSURE) .OR. &
+        (.NOT. Atm_In%Add_Extra_Layers            )) THEN
       Atm_In_AD = Atm_In_AD + Atm_Out_AD
       CALL CRTM_Atmosphere_Zero( Atm_Out_AD )
       RETURN
@@ -609,6 +630,8 @@ CONTAINS
       DO i = 1, Atm_In_AD%n_Clouds
         Atm_In_AD%Cloud(i)%Water_Content(1:no) = Atm_In_AD%Cloud(i)%Water_Content(1:no) + &
                                                  Atm_Out_AD%Cloud(i)%Water_Content(n+1:nt)
+        Atm_In_AD%Cloud(i)%Water_Density(1:no) = Atm_In_AD%Cloud(i)%Water_Density(1:no) + &
+                                                 Atm_Out_AD%Cloud(i)%Water_Density(n+1:nt)
         Atm_In_AD%Cloud(i)%Effective_Variance(1:no) = Atm_In_AD%Cloud(i)%Effective_Variance(1:no) + &
                                                       Atm_Out_AD%Cloud(i)%Effective_Variance(n+1:nt)
         Atm_In_AD%Cloud(i)%Effective_Radius(1:no) = Atm_In_AD%Cloud(i)%Effective_Radius(1:no) + &

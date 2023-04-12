@@ -1,7 +1,7 @@
 B. Johnson JCSDA 10/2020
 
 Synopsis:
-Application, Unit, and Regression tests, largely culled from Paul van Delst's and Dave Groff's CRTM tests, modified to work with CRTM v2.4.0 in a CMake environment.
+Application, Unit, and Regression tests, largely culled from Paul van Delst's and Dave Groff's CRTM tests, modified to work with CRTM v2.4.1 in a CMake environment.
 Not a complete or comprehensive suite of tests, please add a test each time you add a new code element or substantially change code.
 
 In theory, these tests should work with CRTM v2.3.0, and possibly CRTM v2.2.3 (untested)
@@ -38,11 +38,11 @@ Prerequisites:
 
 	Currently, it is looking for the CRTM in the following folder:
 
-         ${CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/   
+         ${CRTM_SOURCE_ROOT}/Build/crtm_v2.4.1/   
 	
 			 In CMakeLists.txt it's looking for it in this line: 
 
-         HINTS "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/lib"
+         HINTS "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.1/lib"
 
 
 Running Tests:

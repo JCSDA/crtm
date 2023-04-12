@@ -39,7 +39,7 @@ MODULE LBLRTM_Fhdr_Define
   PUBLIC :: LBLRTM_Fhdr_IsValid
   PUBLIC :: LBLRTM_Fhdr_Destroy
   PUBLIC :: LBLRTM_Fhdr_Inspect
-  PUBLIC :: LBLRTM_Fhdr_DefineVersion
+  !PUBLIC :: LBLRTM_Fhdr_DefineVersion
   PUBLIC :: LBLRTM_Fhdr_Compare
 
 
@@ -58,7 +58,7 @@ MODULE LBLRTM_Fhdr_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -324,10 +324,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Fhdr_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Fhdr_DefineVersion
+!  SUBROUTINE LBLRTM_Fhdr_DefineVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    Id = MODULE_VERSION_ID
+!  END SUBROUTINE LBLRTM_Fhdr_DefineVersion
 
 
 

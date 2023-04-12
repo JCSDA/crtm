@@ -14,7 +14,6 @@
 !
 !       Modified by:    James Rosinski, 08-Feb-2019
 !                       Rosinski@ucar.edu
-!
 ! (C) Copyright 2019 UCAR
 !
 
@@ -3289,7 +3288,7 @@ CONTAINS
   PURE FUNCTION ODPS_Get_Ozone_Component_ID(Group_Index) RESULT( Ozone_Component_ID )
     INTEGER, INTENT(IN) :: Group_Index
     INTEGER :: Ozone_Component_ID
-    IF( Group_Index == GROUP_1 .OR. Group_Index == GROUP_1)THEN
+    IF( Group_Index == GROUP_1 .OR. Group_Index == GROUP_2)THEN
       Ozone_Component_ID = OZO_ComID
     ELSE
       Ozone_Component_ID = -1

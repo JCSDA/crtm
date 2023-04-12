@@ -95,10 +95,12 @@
 
     ! Cloud data
     IF ( atm(1)%n_Clouds > 0 ) THEN
-      k1 = 75
-      k2 = 79
+      k1 = 60
+      k2 = 80
       DO nc = 1, atm(1)%n_Clouds
-        atm(1)%Cloud(nc)%Type = WATER_CLOUD
+        atm(1)%Cloud_Fraction = 1.0_fp
+        atm(1)%Cloud(nc)%Is_Allocated = .TRUE.
+        atm(1)%Cloud(nc)%Type = SNOW_CLOUD
         atm(1)%Cloud(nc)%Effective_Radius(k1:k2) = 20.0_fp ! microns
         atm(1)%Cloud(nc)%Water_Content(k1:k2)    = 5.0_fp  ! kg/m^2
       END DO
@@ -345,7 +347,10 @@
       k1 = 73
       k2 = 90
       DO nc = 1, atm(2)%n_Clouds
-        atm(2)%Cloud(nc)%Type = RAIN_CLOUD
+        atm(2)%Cloud_Fraction = 0.5_fp
+        atm(2)%Cloud(nc)%Is_Allocated = .TRUE.
+
+        atm(2)%Cloud(nc)%Type = SNOW_CLOUD !RAIN_CLOUD
         atm(2)%Cloud(nc)%Effective_Radius(k1:k2) = 1000.0_fp ! microns
         atm(2)%Cloud(nc)%Water_Content(k1:k2)    =    5.0_fp ! kg/m^2
       END DO 

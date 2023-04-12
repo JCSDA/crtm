@@ -44,7 +44,7 @@ MODULE LBLRTM_Panel_Define
   PUBLIC :: LBLRTM_Panel_Destroy
   PUBLIC :: LBLRTM_Panel_Create
   PUBLIC :: LBLRTM_Panel_Inspect
-  PUBLIC :: LBLRTM_Panel_DefineVersion
+  !PUBLIC :: LBLRTM_Panel_DefineVersion
   PUBLIC :: LBLRTM_Panel_Compare
 
 
@@ -63,7 +63,7 @@ MODULE LBLRTM_Panel_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -423,10 +423,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Panel_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Panel_DefineVersion
+  !SUBROUTINE LBLRTM_Panel_DefineVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Panel_DefineVersion
 
 
 !------------------------------------------------------------------------------

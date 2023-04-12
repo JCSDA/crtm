@@ -42,7 +42,7 @@ MODULE String_Utility
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   ! List of character for case conversion
   CHARACTER(*), PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
   CHARACTER(*), PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 

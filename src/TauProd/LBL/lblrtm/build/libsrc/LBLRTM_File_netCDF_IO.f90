@@ -27,8 +27,8 @@ MODULE LBLRTM_File_netCDF_IO
                                     LBLRTM_File_Create    , &
                                     LBLRTM_File_Inspect
   USE LBLRTM_Layer_netCDF_IO, ONLY: LBLRTM_Layer_netCDF_WriteGroup, &
-                                    LBLRTM_Layer_netCDF_ReadGroup , &
-                                    LBLRTM_Layer_netCDF_IOVersion
+                                    LBLRTM_Layer_netCDF_ReadGroup !, &
+                                    !LBLRTM_Layer_netCDF_IOVersion
   USE netcdf  
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -47,7 +47,7 @@ MODULE LBLRTM_File_netCDF_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = 'Dummy'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants

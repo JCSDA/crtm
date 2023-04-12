@@ -1,33 +1,35 @@
-CRTM REL-2.4.0
+CRTM REL-2.4.1
 ====================
+
 
 Preamble
 --------
 
-CRTM v2.4.0 release (`REL-2.4.0`)  
+CRTM v2.4.1 release (`REL-2.4.1`)  
 
-Created on October  7, 2020  
-Updated on October 23, 2020
+v2.4.1 Released on March 31, 2022
+v2.4.0 Released on October 23, 2020
 
-This is a fully functional release of CRTM v2.4.0.  
+This is the release of CRTM v2.4.1.. Contact crtm-support@googlegroups.com.  
 
 Basic requirements:  
-(1) A Fortran 2003 compatible compiler.  
-(2) A netCDF4 / HDF5 library.   
+(1) A Fortran 2003 compatible compiler. 
+(2) A netCDF4 / HDF5 library that has been built with the compiler you're going to use (module environments are helpful here)
 (3) A linux, macOS, or unix-style environment.  This has not been tested under any Windows Fortran environments.
 (4) Bash shell is preferred. 
+(5) git and git-lfs (minimum version TBD, but has been tested on git-lfs v2.10 and higher )
 
 =========================================================
 
 **Important Note**: If reading this, you're cloning the CRTM development repository.  The development repository is structured in a way that makes it less user friendly, but more amenable to development and testing.
 
-**JEDI NOTE** This develop branch is also designed to work directly in a JEDI container or JEDI environment. If you're doing JEDI things, you're probably in the right spot. However, you can stop reading right now and have a look at the README_JEDI.md file.   
+**JEDI NOTE** This develop (or master) branch is also designed to work directly in a JEDI container or JEDI environment. If you're doing JEDI things, you're probably in the right spot. However, you should stop reading right now and have a look at the README_JEDI.md file.   
 
 If you're looking for an older version of CRTM (v2.3.0 or older) you should obtain the appropriate tarball from
 https://ftp.emc.ncep.noaa.gov/jcsda/CRTM/
 
 If you're looking for version 2.4.0 or newer in a structure similar to older CRTM tarball releases, you should check out the appropriate release/ branch.
-git branch --remote | grep "release/" to see a list OR you may checkout the appropriate tag on the master branch and build it yourself. 
+`git branch --remote | grep "release/"` to see a list of release branches OR you may checkout the appropriate tag on the master branch and build it yourself. 
 
 Finally, you may follow the instructions here to build a "latest" release based on the most recent developments.
 
@@ -64,7 +66,8 @@ The CRTM **development** repository directory structure looks like:
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
-  ├── Get_CRTM_Binary_Files.sh  (gets the fix/ directory)
+  ├── Uncompress_Binary_Files.sh  (manually gunzip files in the fix/ directory after cloning)
+  ├── Get_Binary_Files.sh  (slowly downloads binary tarball from FTP, rather than using git-LFS) 
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
   ├── <b>fix/</b>
@@ -113,12 +116,13 @@ The CRTM **development** repository directory structure looks like:
 In the above list, the directories highlighted in bold (bold in markdown), are the key directories of interest to the casual developer.
 A user is only likely to be interested in creating a "build" or use a previously created build (see releases/* on the github.com repository).
 
-A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what's contained under the `src/Build` directory.
+A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what will be contained under the `src/Build` directory after successful compilation.
 But after a clean clone of the development repository, none of the links to source code have been created yet under `src/Build`.   To get there, follow the next steps.
 
 Configuration
 -------------
-By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Files.sh script. 
+Similar to version 2.4.0, the "`fix/`" directory is provided in the CRTM via ftp.
+Use the Get_Binary_Files.sh script to download and unpack the tarball.   This is recommended prior to running any tests. 
 
 At the top level (`crtm/`), the `configuration` directory contains the various compiler-specific configuration files.
 <pre>
@@ -133,14 +137,32 @@ At the top level (`crtm/`), the `configuration` directory contains the various c
   gfortran.setup            pgf95-debug.setup.csh
 
 </pre>
-[Note: as of the time of writing, October 2020, only `ifort.setup`, `ifort-debug.setup`, `gfortran.setup`, `gfortran-debug.setup` have been actively developed and tested.  It is strongly recommended that the user use one of these compilers until the remaining setup files are updated.  Contact the support email address for specific compiler support requests.  The c-shell (.csh) extension files have not been updated.]
+[Note: as of the time of writing, October 2020, only `ifort.setup`, `ifort-debug.setup`, `gfortran.setup`, `gfortran-debug.setup` have been actively developed and tested.  It is strongly recommended that the user use one of these compilers until the remaining setup files are updated, or update them yourself.  Contact the support email address for specific compiler support requests.  The c-shell (.csh) extension files have not been updated.]
 
 All of the above files define values for the environment variables `FC`, `FCFLAGS`, `LDFLAGS`, and `LIBS`.
- 
+
+It is also inside of these files that you should specify the path to your netCDF4 and HDF5 installations.  
+Here's a trick to find these on your system:
+find / -name "libnetcdff.a" -type f
+find / -name "netcdf.mod" -type f
+find / -name "libhdf5.a" -type f  
+
+For example, if you're using the intel fortran compiler version 19.0.5:
+```
+find / -name "libhdf5.a" -type f  
+<...>
+/opt/hdf5/1.8.21-intel-19.0.5/lib/libhdf5.a
+<...>
+```
+and you would modify the base path in the appropriate `ifort.setup` file, for example:
+`export HDF_DIR="/opt/hdf5/1.8.21-intel-19.0.5"`
+similarly for the `NC4_DIR` line.   
+
 To use these files to define the CRTM build environment, you should source them. For example, if you use the sh/bash/ksh shells and you want to setup
 for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
+
     . configuration/gfortran-debug.setup
 
 (note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
@@ -153,7 +175,7 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
-sh Get_CRTM_Binary_Files.sh
+sh Get_Binary_Files.sh
 cd src/
 cd Build/
 make clean  
@@ -176,7 +198,7 @@ make clean
 make -j4
 </pre>
 
-(See additional options for `configure` below.  `-j4` sets the number of parallel make processes to 4.)
+(See additional options for `configure` below.  `-j4` sets the number of parallel `make` processes to 4.)
 
 Now we have finally compiled the linked source codes that reside in the `libsrc/` directory.    Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
 
@@ -198,8 +220,9 @@ The `make check` command builds and runs the default CRTM test `check_crtm`, loc
 Summary of Build Script
 -----------------------
 <pre>
-. configuration/gfortran-debug.setup  
+. configuration/gfortran-debug.setup (or whatever compiler you're using)  
 . ./Set_CRTM_Environment.sh  
+sh Get_Binary_Files.sh
 cd src/  
 make realclean  
 make  
@@ -221,10 +244,10 @@ make install
 Linking to the library
 ----------------------
 
-Let's assume the above install was moved into "/home/username/CRTM/crtm_v2.4.0/", to use the library in this structure in your own application, the usual environment variables would need to be be modified something like:
+Let's assume the above install was moved into "/home/username/CRTM/crtm_v2.4.1/", to use the library in this structure in your own application, the usual environment variables would need to be be modified something like:
 
 <pre>
-libroot="/home/username/CRTM/crtm_v2.4.0"
+libroot="/home/username/CRTM/crtm_v2.4.1"
 FCFLAGS="-I${libroot}/include ${FCFLAGS}"
 LDFLAGS="-L${libroot}/lib ${LDFLAGS}"
 LIBS="-lcrtm ${LIBS}"
@@ -237,11 +260,11 @@ To uninstall the library (assuming you haven't moved the installation directory 
 
     make uninstall
 
-This will DELETE the created installation directory. So, for a library version, say, v2.4.0, if your configure script invocation was something like
+This will DELETE the created installation directory. So, for a library version, say, v2.4.1, if your configure script invocation was something like
 
     ./configure --prefix=${PWD} ...other command line arguments...
 
-then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0" directory.
+then the "uninstall" target will delete the "${PWD}/crtm_v2.4.1" directory.
 
 
 Cleaning Up
@@ -266,7 +289,7 @@ make distclean
 --------------------------------------------------
 
 Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
-(1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.   
+(1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed, this is finicky, contact support for help.  
 (2) The `Makefile.in` file, which contains instructions on how executing the `configure` script will generate `Makefile` in libsrc and test subdirectories.  
 
 The Build `Makefile`s assume that environment variables (envars) will be defined that describe the compilation environment. The envars
@@ -288,13 +311,13 @@ make install
 
 **Additional options for `configure`**
 
-`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.4.0/` (or whatever string in in `src/CRTM_Version.inc`).  
+`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.4.1/` (or whatever string in in `src/CRTM_Version.inc`).  
 
 The `--prefix` switch sets the installation directory, make sure you have write access to that directory.  
 
 You can override this by setting a different install directory as follows:  
   `   ./configure --prefix=<install directory>`  
-For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.4.0/).
+For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.4.1/).
 
 By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
 
@@ -359,5 +382,6 @@ Returning to directory <directory>/crtm/src
 </pre>
 You forgot to `. ./Set_CRTM_Environment.sh` in the crtm/ directory, paying close attention to that leading `. `.
 Then `cd src/` and `make`.
+
 
 

@@ -29,16 +29,17 @@ FSRC_FILES = \
   Subset_Define.f90 \
   SpcCoeff_Define.f90 ACCoeff_Define.f90 NLTECoeff_Define.f90 \
   SpcCoeff_Binary_IO.f90 ACCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.f90 \
-  CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 CloudCoeff_netCDF_IO.f90 \
-  AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 AerosolCoeff_netCDF_IO.f90 \
+  CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 CloudCoeff_netCDF_IO.f90 CloudCoeff_IO.f90 \
+  AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 AerosolCoeff_netCDF_IO.f90 AerosolCoeff_IO.f90 \
   CRTM_Options_Define.f90 \
   CRTM_AOD_Module.f90 \
-  IRwaterCoeff_Define.f90 \
-  SEcategory_Define.f90 \
+  IRwaterCoeff_Define.f90 IRwaterCoeff_IO.f90 IRwaterCoeff_netCDF_IO.f90 \
+  IRsnowCoeff_Define.f90 IRsnowCoeff_IO.f90 IRsnowCoeff_netCDF_IO.f90 IRsnowCoeff_Binary_IO.f90 \
+  SEcategory_Define.f90 SEcategory_IO.f90 SEcategory_netCDF_IO.f90\
   LSEatlas_Define.f90 \
   MWwaterCoeff_Define.f90 \
-    FitCoeff_Define.f90 \
-    MWwaterLUT_Define.f90 \
+  FitCoeff_Define.f90 \
+  MWwaterLUT_Define.f90 \
   NESDIS_AMSRE_SICEEM_Module.f90 \
   NESDIS_AMSRE_SNOWEM_Module.f90 \
   NESDIS_AMSU_SICEEM_Module.f90 \
@@ -57,9 +58,13 @@ FSRC_FILES = \
   NESDIS_ATMS_SnowEM_Module.f90 \
   NESDIS_ATMS_SeaICE_LIB.f90 \
   NESDIS_ATMS_SeaICE_Module.f90 \
+  netCDF_Utility.f90 \
+  netCDF_Attribute_Utility.f90 \
+  netCDF_Dimension_Utility.f90 \
+  netCDF_Variable_Utility.f90 \
   CRTM_Utility.f90 \
   CRTM_Interpolation.f90 \
-  CRTM_SpcCoeff.f90 \
+  CRTM_SpcCoeff.f90 SpcCoeff_IO.f90 SpcCoeff_netCDF_IO.f90 ACCoeff_netCDF_IO.f90 NLTECoeff_netCDF_IO.f90\
   CRTM_TauCoeff.f90 TauCoeff_Define.f90 \
   CRTM_AerosolCoeff.f90 \
   CRTM_CloudCoeff.f90 \
@@ -73,6 +78,7 @@ FSRC_FILES = \
   CRTM_Geometry_Define.f90 \
   CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo.f90 \
   CRTM_Atmosphere.f90 iAtm_Define.f90 \
+  CRTM_Hypsometric.f90 \
   CRTM_CloudCover_Define.f90 \
   CRTM_Model_Profiles.f90 \
   CRTM_AerosolScatter.f90 ASvar_Define.f90 \
@@ -82,18 +88,19 @@ FSRC_FILES = \
   CRTM_SfcOptics.f90 \
   CRTM_IR_Land_SfcOptics.f90 CRTM_IR_Water_SfcOptics.f90 CRTM_IR_Snow_SfcOptics.f90 CRTM_IR_Ice_SfcOptics.f90 \
   CRTM_MW_Land_SfcOptics.f90 CRTM_MW_Water_SfcOptics.f90 CRTM_MW_Snow_SfcOptics.f90 CRTM_MW_Ice_SfcOptics.f90 \
-  CRTM_VIS_Land_SfcOptics.f90  CRTM_VIS_Water_SfcOptics.f90 CRTM_VIS_Snow_SfcOptics.f90 CRTM_VIS_Ice_SfcOptics.f90 \
+  CRTM_VIS_Land_SfcOptics.f90 CRTM_VIS_Water_SfcOptics.f90 CRTM_VIS_Snow_SfcOptics.f90 CRTM_VIS_Ice_SfcOptics.f90 \
   CRTM_SEcategory.f90 \
   CRTM_LowFrequency_MWSSEM.f90 \
   CRTM_Fastem1.f90 \
   CRTM_FastemX.f90 \
-    Reflection_Correction_Module.f90 \
-    Azimuth_Emissivity_Module.f90 Azimuth_Emissivity_F6_Module.f90 \
-    Small_Scale_Correction_Module.f90 Large_Scale_Correction_Module.f90 \
-    Foam_Utility_Module.f90 Slope_Variance.f90 \
-    Guillou.f90 Ellison.f90 Liu.f90 \
-    Fresnel.f90 \
+  Reflection_Correction_Module.f90 \
+  Azimuth_Emissivity_Module.f90 Azimuth_Emissivity_F6_Module.f90 \
+  Small_Scale_Correction_Module.f90 Large_Scale_Correction_Module.f90 \
+  Foam_Utility_Module.f90 Slope_Variance.f90 \
+  Guillou.f90 Ellison.f90 Liu.f90 \
+  Fresnel.f90 \
   CRTM_IRSSEM.f90 \
+  CRTM_IRSnowEM.f90 \
   CRTM_AtmOptics.f90 CRTM_AtmOptics_Define.f90 AOvar_Define.f90 \
   CRTM_Planck_Functions.f90 \
   RTV_Define.f90 \
@@ -102,11 +109,11 @@ FSRC_FILES = \
   Emission_Module.f90 \
   CRTM_RTSolution_Define.f90 \
   Common_RTSolution.f90 \
-  CRTM_RTSolution.f90 \
+  CRTM_RTSolution.f90 CRTM_Active_Sensor.f90 \
   CRTM_AntennaCorrection.f90 \
   CRTM_AncillaryInput_Define.f90 \
-    SSU_Input_Define.f90 \
-    Zeeman_Input_Define.f90 \
+  SSU_Input_Define.f90 \
+  Zeeman_Input_Define.f90 \
   CRTM_Parameters.f90 \
   CRTM_LifeCycle.f90 \
   CRTM_Forward_Module.f90 \
@@ -120,13 +127,15 @@ FSRC_FILES = \
   ODAS_Predictor.f90 \
   ODAS_Predictor_Define.f90 \
   ODAS_Binary_IO.f90 \
+  ODAS_netCDF_IO.f90 \
   ODAS_Define.f90 \
   ODAS_TauCoeff.f90 \
   ODPS_AtmAbsorption.f90 \
   ODPS_Predictor.f90 \
   ODPS_Predictor_Define.f90 \
-    PAFV_Define.f90 \
+  PAFV_Define.f90 \
   ODPS_Binary_IO.f90 \
+  ODPS_netCDF_IO.f90 \
   ODPS_Define.f90 \
   ODPS_TauCoeff.f90 \
   CRTM_GeometryInfo.f90 \

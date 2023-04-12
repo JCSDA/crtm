@@ -33,6 +33,8 @@ MODULE CRTM_Module
   USE CRTM_Tangent_Linear_Module
   USE CRTM_Adjoint_Module
   USE CRTM_K_Matrix_Module
+  USE CRTM_Active_Sensor         , ONLY: Calculate_Height
+  
   ! ...The aerosol optical depth tool
   USE CRTM_AOD_Module
 

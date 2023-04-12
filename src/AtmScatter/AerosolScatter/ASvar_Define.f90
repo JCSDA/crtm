@@ -10,8 +10,9 @@
 !                       paul.vandelst@noaa.gov
 !       Modified by:    Yingtao Ma, 2020/8/13; yingtao.ma@noaa.gov
 !                       Modified ASinterp_type structure to allow forinterpolation over size variance
-!
-
+!       Modified by     Cheng Dang, 20-Nov-2020;
+!                       dangch@ucar.edu
+!                       Modified ASinterp_type structure to allow for interpolation over relative humidity
 MODULE ASvar_Define
 
   ! -----------------
@@ -86,22 +87,28 @@ MODULE ASvar_Define
     TYPE(LPoly_type) :: wlp  ! Frequency
     TYPE(LPoly_type) :: xlp  ! Effective radius
     TYPE(LPoly_type) :: vlp  ! Size variance
+    TYPE(LPoly_type) :: hlp  ! Relative humidity
     ! The LUT interpolation indices
     INTEGER :: i1, i2        ! Frequency
     INTEGER :: j1, j2        ! Effective radius
     INTEGER :: k1, k2        ! Size variance
+    INTEGER :: h1, h2        ! Relative humidity
+    INTEGER :: rbin          ! Effective radius bin
     ! The LUT interpolation boundary check
     LOGICAL :: f_outbound    ! Frequency
     LOGICAL :: r_outbound    ! Effective radius
     LOGICAL :: v_outbound    ! Size variance
+    LOGICAL :: h_outbound    ! Relative humidity
     ! The interpolation input
     REAL(fp) :: f_int        ! Frequency
     REAL(fp) :: r_int        ! Effective radius
     REAL(fp) :: v_int        ! Size variance
+    REAL(fp) :: h_int        ! Relative humidity
     ! The data to be interpolated
     REAL(fp) :: f(NPTS)      ! Frequency
     REAL(fp) :: r(NPTS)      ! Effective radius
     REAL(fp) :: v(NPTS)      ! Size variance
+    REAL(fp) :: h(NPTS)      ! Relative humidity
   END TYPE ASinterp_type
 
 

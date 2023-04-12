@@ -1,0 +1,28 @@
+#==============================================================================
+#
+# Makefile to create *local, working copy* coefficient data links
+# for the current example scenario
+#
+#==============================================================================
+
+# Define macros via include file
+include $(CRTM_SOURCE_ROOT)/make.macros
+
+# Define the endian type for ALL datafiles
+ENDIAN_TYPE = Big_Endian
+
+# Define common coefficient file link targets via include file
+include $(CRTM_SOURCE_ROOT)/make.common_coefficient_targets
+
+# Define sensor coefficient file link targets via include file
+TAUCOEFF_TYPE = ODPS
+SENSOR_IDS = amsua_metop-a mhs_n18 hirs4_n18 ssmis_f16 amsre_aqua
+include $(CRTM_SOURCE_ROOT)/make.sensor_coefficient_targets
+
+# Main targets
+# ...Subtargets used by main makefiles
+create_coeff_links:: create_common_coeff_links create_sensor_coeff_links
+remove_coeff_links:: remove_common_coeff_links remove_sensor_coeff_links
+# ..."Global" targets
+all:: create_coeff_links
+clean:: remove_coeff_links

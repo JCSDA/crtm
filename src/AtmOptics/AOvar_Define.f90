@@ -9,6 +9,10 @@
 !       Written by:     Paul van Delst, 01-Jul-2013
 !                       paul.vandelst@noaa.gov
 !                       
+!       Modified by:    Isaac Moradi,    Isaac.Moradi@nasa.gov
+!                       14-Nov-2021
+!                       Added the backscat_coefficient
+!
 
 MODULE AOvar_Define
 
@@ -90,6 +94,7 @@ MODULE AOvar_Define
     REAL(fp), ALLOCATABLE :: optical_depth(:)
     REAL(fp), ALLOCATABLE :: bs(:)
     REAL(fp), ALLOCATABLE :: w(:)
+    REAL(fp), ALLOCATABLE :: Backscat_Coefficient(:)
   END TYPE AOvar_type
 
 
@@ -134,6 +139,7 @@ CONTAINS
     ALLOCATE( self%optical_depth(n_Layers), &
               self%bs(n_Layers), &
               self%w(n_Layers), &
+              self%Backscat_Coefficient(n_layers), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
@@ -164,6 +170,8 @@ CONTAINS
     WRITE(*,'(5(1x,es22.15,:))') self%bs
     WRITE(*,'(3x,"Single scatter albedo (w) :")')
     WRITE(*,'(5(1x,es22.15,:))') self%w
+    WRITE(*,'(3x,"Backscattering coefficient :")')
+    WRITE(*,'(5(1x,es22.15,:))') self%Backscat_Coefficient
   END SUBROUTINE AOvar_Inspect
 
 
@@ -471,6 +479,12 @@ CONTAINS
       msg = 'Error reading single scatter albedo - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
+    ! ...Backscattering coefficient
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) AOvar%Backscat_Coefficient
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading backscattering coefficient - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN        
+    END IF
 
 
     ! Close the file
@@ -631,6 +645,12 @@ CONTAINS
       msg = 'Error writing single scatter albedo - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
+    ! ...backscattering coefficient
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) AOvar%Backscat_Coefficient
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing backscattering coefficient - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
 
 
     ! Close the file
@@ -690,10 +710,12 @@ CONTAINS
     ! ...Dimensions
     IF ( (x%n_Layers /= y%n_Layers ) ) RETURN
     ! ...Data
-    IF (    (x%transmittance .EqualTo. y%transmittance ) .AND. &
-         ALL(x%optical_depth .EqualTo. y%optical_depth ) .AND. &
-         ALL(x%bs            .EqualTo. y%bs            ) .AND. &
-         ALL(x%w             .EqualTo. y%w             ) ) &
+    IF (    (x%transmittance         .EqualTo. y%transmittance )         .AND. &
+         ALL(x%optical_depth         .EqualTo. y%optical_depth )         .AND. &
+         ALL(x%bs                    .EqualTo. y%bs            )         .AND. &
+         ALL(x%w                     .EqualTo. y%w             )         .AND. &
+         ALL(x%Backscat_Coefficient .EqualTo. y%Backscat_Coefficient )       &
+         ) &
       is_equal = .TRUE.
   END FUNCTION AOvar_Equal
 

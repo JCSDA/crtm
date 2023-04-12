@@ -9,6 +9,12 @@
 !       Written by:     Paul van Delst, 17-Dec-2002
 !                       paul.vandelst@noaa.gov
 !
+!       Modified by:     Isaac Moradi, 12-Nov-2021
+!                        Isaac.Moradi@NASA.GOV
+!
+!                        Included changes to determine whether the sensor
+!                        is active or not
+!
 
 MODULE SpcCoeff_netCDF_IO
 
@@ -26,8 +32,9 @@ MODULE SpcCoeff_netCDF_IO
                              SpcCoeff_Create        , &
                              SpcCoeff_Inspect       , &
                              SpcCoeff_ValidRelease  , &
-                             SpcCoeff_Info          , &
-                             SpcCoeff_DefineVersion
+                             SpcCoeff_Info          
+  USE SensorInfo_Parameters, ONLY: ACTIVE_SENSOR
+  
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -49,6 +56,7 @@ MODULE SpcCoeff_netCDF_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id: SpcCoeff_netCDF_IO.f90 13519 2021-01-29 19:34:34Z patrick.stegmann@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
@@ -75,6 +83,7 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_VARNAME      = 'Sensor_Type'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_VARNAME   = 'Sensor_Channel'
   CHARACTER(*), PARAMETER :: POLARIZATION_VARNAME     = 'Polarization'
+  CHARACTER(*), PARAMETER :: POLANGLE_VARNAME         = 'Polarization_Angle'
   CHARACTER(*), PARAMETER :: CHANNEL_FLAG_VARNAME     = 'Channel_Flag'
   CHARACTER(*), PARAMETER :: FREQUENCY_VARNAME        = 'Frequency'
   CHARACTER(*), PARAMETER :: WAVENUMBER_VARNAME       = 'Wavenumber'
@@ -92,6 +101,7 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_LONGNAME      = 'Sensor Type'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_LONGNAME   = 'Sensor Channel'
   CHARACTER(*), PARAMETER :: POLARIZATION_LONGNAME     = 'Polarization type flag'
+  CHARACTER(*), PARAMETER :: POLANGLE_LONGNAME         = 'Polarization Angle'
   CHARACTER(*), PARAMETER :: CHANNEL_FLAG_LONGNAME     = 'Channel flag'
   CHARACTER(*), PARAMETER :: FREQUENCY_LONGNAME        = 'Frequency'
   CHARACTER(*), PARAMETER :: WAVENUMBER_LONGNAME       = 'Wavenumber'
@@ -109,6 +119,7 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_DESCRIPTION      = 'Sensor type to identify uW, IR, VIS, UV, etc sensor channels'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_DESCRIPTION   = 'List of sensor channel numbers'
   CHARACTER(*), PARAMETER :: POLARIZATION_DESCRIPTION     = 'Polarization type flag.'
+  CHARACTER(*), PARAMETER :: POLANGLE_DESCRIPTION         = 'Polarization angle offset'
   CHARACTER(*), PARAMETER :: CHANNEL_FLAG_DESCRIPTION     = 'Bit position flags for channels'
   CHARACTER(*), PARAMETER :: FREQUENCY_DESCRIPTION        = 'Channel central frequency, f'
   CHARACTER(*), PARAMETER :: WAVENUMBER_DESCRIPTION       = 'Channel central wavenumber, v'
@@ -126,6 +137,7 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_UNITS   = 'N/A'
   CHARACTER(*), PARAMETER :: POLARIZATION_UNITS     = 'N/A'
+  CHARACTER(*), PARAMETER :: POLANGLE_UNITS         = 'degrees (^o)'
   CHARACTER(*), PARAMETER :: CHANNEL_FLAG_UNITS     = 'N/A'
   CHARACTER(*), PARAMETER :: FREQUENCY_UNITS        = 'Gigahertz (GHz)'
   CHARACTER(*), PARAMETER :: WAVENUMBER_UNITS       = 'Inverse centimetres (cm^-1)'
@@ -143,6 +155,7 @@ MODULE SpcCoeff_netCDF_IO
   INTEGER(Long), PARAMETER :: SENSOR_TYPE_FILLVALUE      = 0
   INTEGER(Long), PARAMETER :: SENSOR_CHANNEL_FILLVALUE   = 0
   INTEGER(Long), PARAMETER :: POLARIZATION_FILLVALUE     = 0
+  REAL(Double), PARAMETER :: POLANGLE_FILLVALUE         = ZERO
   INTEGER(Long), PARAMETER :: CHANNEL_FLAG_FILLVALUE     = 0
   REAL(Double),  PARAMETER :: FREQUENCY_FILLVALUE        = ZERO
   REAL(Double),  PARAMETER :: WAVENUMBER_FILLVALUE       = ZERO
@@ -158,6 +171,7 @@ MODULE SpcCoeff_netCDF_IO
   INTEGER, PARAMETER :: SENSOR_TYPE_TYPE      = NF90_INT
   INTEGER, PARAMETER :: SENSOR_CHANNEL_TYPE   = NF90_INT
   INTEGER, PARAMETER :: POLARIZATION_TYPE     = NF90_INT
+  INTEGER, PARAMETER :: POLANGLE_TYPE         = NF90_DOUBLE
   INTEGER, PARAMETER :: CHANNEL_FLAG_TYPE     = NF90_INT
   INTEGER, PARAMETER :: FREQUENCY_TYPE        = NF90_DOUBLE
   INTEGER, PARAMETER :: WAVENUMBER_TYPE       = NF90_DOUBLE
@@ -496,7 +510,8 @@ CONTAINS
     INTEGER :: nf90_status
     INTEGER :: fileid
     INTEGER :: varid
-
+    INTEGER(long) :: Sensor_Type
+    
     ! Set up
     err_stat = SUCCESS
     close_file = .FALSE.
@@ -543,7 +558,14 @@ CONTAINS
             ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Sensor_Type )
+    
+    ! If it Is_Active_Sensor then add ACTIVE_SENOR to Sensor_Type
+    IF (SpcCoeff%Is_Active_Sensor) THEN
+        Sensor_Type = SpcCoeff%Sensor_Type + ACTIVE_SENSOR
+    ELSE
+        Sensor_Type = SpcCoeff%Sensor_Type
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,Sensor_Type )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//SENSOR_TYPE_VARNAME//' to '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -574,6 +596,21 @@ CONTAINS
       msg = 'Error writing '//POLARIZATION_VARNAME//' to '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Polarization angle variable
+    IF( SpcCoeff%Version > 2 ) THEN
+      NF90_Status = NF90_INQ_VARID( FileId,POLANGLE_VARNAME,VarId )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//POLANGLE_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%PolAngle )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error writing '//POLANGLE_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
     END IF
     ! ...Channel_Flag variable
     NF90_Status = NF90_INQ_VARID( FileId,CHANNEL_FLAG_VARNAME,VarId )
@@ -912,6 +949,13 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Read_Cleanup(); RETURN
     END IF
+    ! If the Sensor_Type is greater than ACTIVE_SENOR then set the Is_Active_Sensor flag
+    ! and subtract the numebr so that subsequently it can be defined as MW/IR/VIS/UV
+    IF (SpcCoeff%Sensor_Type .GT. ACTIVE_SENSOR) THEN
+       SpcCoeff%Is_Active_Sensor = .TRUE.
+       SpcCoeff%Sensor_Type = SpcCoeff%Sensor_Type - ACTIVE_SENSOR
+    END IF
+    
     ! ...Sensor_Channel variable
     nf90_status = NF90_INQ_VARID( fileid,SENSOR_CHANNEL_VARNAME,varid )
     IF ( nf90_status /= NF90_NOERR ) THEN
@@ -937,6 +981,21 @@ CONTAINS
       msg = 'Error reading '//POLARIZATION_VARNAME//' from '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Polarization angle variable
+    IF ( SpcCoeff%Version > 2 ) THEN
+      nf90_status = NF90_INQ_VARID( fileid,POLANGLE_VARNAME,varid )
+      IF ( nf90_status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//POLANGLE_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+        CALL Read_Cleanup(); RETURN
+      END IF
+      nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%PolAngle )
+      IF ( nf90_status /= NF90_NOERR ) THEN
+        msg = 'Error reading '//POLANGLE_VARNAME//' from '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( nf90_status ))
+        CALL Read_Cleanup(); RETURN
+      END IF
     END IF
     ! ...Channel_Flag variable
     nf90_status = NF90_INQ_VARID( fileid,CHANNEL_FLAG_VARNAME,varid )
@@ -1530,6 +1589,25 @@ CONTAINS
     put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,POLARIZATION_FILLVALUE   )
     IF ( ANY(put_status /= NF90_NOERR) ) THEN
       msg = 'Error writing '//POLARIZATION_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Polarization angle variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                POLANGLE_VARNAME, &
+                                POLANGLE_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//POLANGLE_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,POLANGLE_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,POLANGLE_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,POLANGLE_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,POLANGLE_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//POLANGLE_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...Channel_Flag variable

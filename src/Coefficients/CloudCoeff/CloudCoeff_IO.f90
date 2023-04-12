@@ -21,16 +21,16 @@ MODULE CloudCoeff_IO
   USE CloudCoeff_Define   , ONLY: CloudCoeff_type, OPERATOR(==)
   USE CloudCoeff_Binary_IO, ONLY: CloudCoeff_Binary_InquireFile, &
                                   CloudCoeff_Binary_ReadFile   , &
-                                  CloudCoeff_Binary_WriteFile  , &
-                                  CloudCoeff_Binary_IOVersion
+                                  CloudCoeff_Binary_WriteFile
+                                  !CloudCoeff_Binary_IOVersion
   USE CloudCoeff_netCDF_IO, ONLY: CloudCoeff_netCDF_InquireFile, &
                                   CloudCoeff_netCDF_ReadFile   , &
-                                  CloudCoeff_netCDF_WriteFile  , &
-                                  CloudCoeff_netCDF_IOVersion
+                                  CloudCoeff_netCDF_WriteFile
+                                  !CloudCoeff_netCDF_IOVersion
   ! Disable implicit typing
   IMPLICIT NONE
-  
-  
+
+
   ! ------------
   ! Visibilities
   ! ------------
@@ -40,14 +40,14 @@ MODULE CloudCoeff_IO
   PUBLIC :: CloudCoeff_WriteFile
   PUBLIC :: CloudCoeff_netCDF_to_Binary
   PUBLIC :: CloudCoeff_Binary_to_netCDF
-  PUBLIC :: CloudCoeff_IOVersion
+  !PUBLIC :: CloudCoeff_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  
+  !CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+
 
 CONTAINS
 
@@ -75,10 +75,11 @@ CONTAINS
 !                        netCDF           = netCDF          , &
 !                        n_MW_Frequencies = n_MW_Frequencies, &
 !                        n_MW_Radii       = n_MW_Radii      , &
+!                        n_MW_Densities   = n_MW_Densities  , &
 !                        n_IR_Frequencies = n_IR_Frequencies, &
 !                        n_IR_Radii       = n_IR_Radii      , &
+!                        n_IR_Densities   = n_IR_Densities  , &
 !                        n_Temperatures   = n_Temperatures  , &
-!                        n_Densities      = n_Densities     , &
 !                        n_Legendre_Terms = n_Legendre_Terms, &
 !                        n_Phase_Elements = n_Phase_Elements, &
 !                        Release          = Release         , &
@@ -114,36 +115,42 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_MW_Radii:        The number of discrete effective radii 
+!       n_MW_Radii:        The number of discrete effective radii
 !                          for MW scatterers in the LUT.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
+!       n_MW_Densities:    The number of fixed densities for snow, graupel,
+!                          and hail/ice in the MW LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_IR_Frequencies:  The number of infrared frequencies in
-!                          the LUT 
+!                          the LUT
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_IR_Radii:        The number of discrete effective radii 
+!       n_IR_Radii:        The number of discrete effective radii
 !                          for IR scatterers in the LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       n_Temperatures:    The number of discrete layer temperatures
-!                          in the LUT. 
+!       n_IR_Densities:    The number of fixed densities for snow, graupel,
+!                          and hail/ice in the IR LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Densities:       The number of fixed densities for snow, graupel,
-!                          and hail/ice in the LUT. 
+!
+!       n_Temperatures:    The number of discrete layer temperatures
+!                          in the LUT.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
@@ -217,10 +224,11 @@ CONTAINS
     netCDF          , &  ! Optional input
     n_MW_Frequencies, &  ! Optional Output
     n_MW_Radii      , &  ! Optional Output
+    n_MW_Densities  , &  ! Optional Output
     n_IR_Frequencies, &  ! Optional Output
     n_IR_Radii      , &  ! Optional Output
+    n_IR_Densities  , &  ! Optional Output
     n_Temperatures  , &  ! Optional Output
-    n_Densities     , &  ! Optional Output
     n_Legendre_Terms, &  ! Optional Output
     n_Phase_Elements, &  ! Optional Output
     Release         , &  ! Optional output
@@ -232,19 +240,20 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     LOGICAL,      OPTIONAL, INTENT(IN)  :: netCDF
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Frequencies    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Radii          
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Frequencies    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Radii          
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Temperatures      
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Densities         
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Release         
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Version         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Frequencies
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Radii
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Densities
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Frequencies
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Radii
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Densities
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Temperatures
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Release
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
     INTEGER :: err_stat
     ! Function variables
@@ -265,21 +274,23 @@ CONTAINS
                    n_MW_Radii       = n_MW_Radii      , &
                    n_IR_Frequencies = n_IR_Frequencies, &
                    n_IR_Radii       = n_IR_Radii      , &
+                   n_Densities      = n_IR_Densities  , &
                    n_Temperatures   = n_Temperatures  , &
-                   n_Densities      = n_Densities     , &
                    n_Legendre_Terms = n_Legendre_Terms, &
                    n_Phase_Elements = n_Phase_Elements, &
                    Release          = Release         , &
                    Version          = Version           )
+      n_MW_Densities = n_IR_Densities 
     ELSE
       err_stat = CloudCoeff_netCDF_InquireFile( &
                    Filename, &
                    n_MW_Frequencies = n_MW_Frequencies, &
                    n_MW_Radii       = n_MW_Radii      , &
+                   n_MW_Densities   = n_MW_Densities  , &
                    n_IR_Frequencies = n_IR_Frequencies, &
                    n_IR_Radii       = n_IR_Radii      , &
                    n_Temperatures   = n_Temperatures  , &
-                   n_Densities      = n_Densities     , &
+                   n_IR_Densities   = n_IR_Densities  , &
                    n_Legendre_Terms = n_Legendre_Terms, &
                    n_Phase_Elements = n_Phase_Elements, &
                    Release          = Release         , &
@@ -388,13 +399,13 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CloudCoeff_ReadFile( &
-    Filename  , &  ! Input
-    CloudCoeff, &  ! Output
-    netCDF    , &  ! Optional input
-    Quiet     , &  ! Optional input
-    Title     , &  ! Optional output
-    History   , &  ! Optional output
-    Comment   ) &  ! Optional output
+    Filename   , &  ! Input
+    CloudCoeff , &  ! Output
+    netCDF     , &  ! Optional input
+    Quiet      , &  ! Optional input
+    Title      , &  ! Optional output
+    History    , &  ! Optional output
+    Comment    ) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
@@ -648,7 +659,7 @@ CONTAINS
     ! Function variables
     CHARACTER(256) :: msg
     TYPE(CloudCoeff_type) :: cc, cc_copy
-    
+
     ! Set up
     err_stat = SUCCESS
 
@@ -760,7 +771,7 @@ CONTAINS
     ! Function variables
     CHARACTER(256) :: msg
     TYPE(CloudCoeff_type) :: cc, cc_copy
-    
+
     ! Set up
     err_stat = SUCCESS
 
@@ -824,23 +835,23 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CloudCoeff_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-    INTEGER, PARAMETER :: LINEFEED = 10
-    INTEGER, PARAMETER :: SL = 256
-    CHARACTER(SL)   :: Binary_IO_Id, netCDF_IO_Id
-    CHARACTER(SL*3) :: IO_Id
-    CALL CloudCoeff_Binary_IOVersion( Binary_IO_Id )
-    CALL CloudCoeff_netCDF_IOVersion( netCDF_IO_Id )
-    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '  '//TRIM(Binary_IO_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '  '//TRIM(netCDF_IO_Id)
-    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
-      Id = IO_Id
-    ELSE
-      Id = MODULE_VERSION_ID
-    END IF
-  END SUBROUTINE CloudCoeff_IOVersion
+!  SUBROUTINE CloudCoeff_IOVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+!    INTEGER, PARAMETER :: LINEFEED = 10
+!    INTEGER, PARAMETER :: SL = 256
+!    CHARACTER(SL)   :: Binary_IO_Id, netCDF_IO_Id
+!    CHARACTER(SL*3) :: IO_Id
+!    CALL CloudCoeff_Binary_IOVersion( Binary_IO_Id )
+!    CALL CloudCoeff_netCDF_IOVersion( netCDF_IO_Id )
+!    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+!            '  '//TRIM(Binary_IO_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+!            '  '//TRIM(netCDF_IO_Id)
+!    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
+!      Id = IO_Id
+!    ELSE
+!      Id = MODULE_VERSION_ID
+!    END IF
+!  END SUBROUTINE CloudCoeff_IOVersion
 
 END MODULE CloudCoeff_IO

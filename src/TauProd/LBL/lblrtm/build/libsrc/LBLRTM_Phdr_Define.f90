@@ -38,7 +38,7 @@ MODULE LBLRTM_Phdr_Define
   PUBLIC :: LBLRTM_Phdr_IsValid
   PUBLIC :: LBLRTM_Phdr_Destroy
   PUBLIC :: LBLRTM_Phdr_Inspect
-  PUBLIC :: LBLRTM_Phdr_DefineVersion
+ ! PUBLIC :: LBLRTM_Phdr_DefineVersion
   PUBLIC :: LBLRTM_Phdr_Compare
 
 
@@ -57,7 +57,7 @@ MODULE LBLRTM_Phdr_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -256,10 +256,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Phdr_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Phdr_DefineVersion
+!  SUBROUTINE LBLRTM_Phdr_DefineVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    Id = MODULE_VERSION_ID
+!  END SUBROUTINE LBLRTM_Phdr_DefineVersion
 
 
 

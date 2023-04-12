@@ -9,6 +9,18 @@
 !       Written by:     Paul van Delst, 18-Mar-2002
 !                       paul.vandelst@noaa.gov
 !
+! MODIFICATION HISTORY:
+! =====================
+!
+! Author:          Date:          Description:
+! =======          =====          ============
+! Patrick Stegmann 2021-01-22     Added SpcCoeff_type%PolAngle for the TROPICS
+!                                 instrument polarization scheme in SfcOptics.
+!
+! Isaac Moradi     2021-11-12     Isaac.Moradi@nasa.gov
+!                                 Included changes to determine whether the sensor
+!                                 is active or not
+! 
 
 MODULE SpcCoeff_Define
 
@@ -46,8 +58,10 @@ MODULE SpcCoeff_Define
                                    minus45L_POLARIZATION   , &
                                    VL_MIXED_POLARIZATION   , &
                                    HL_MIXED_POLARIZATION   , &
+                                   CONST_MIXED_POLARIZATION, &
                                    RC_POLARIZATION         , &
                                    LC_POLARIZATION         , &
+                                   PRA_POLARIZATION        , &
                                    POLARIZATION_TYPE_NAME
   USE ACCoeff_Define       , ONLY: ACCoeff_type          , &
                                    OPERATOR(==)          , &
@@ -157,11 +171,13 @@ MODULE SpcCoeff_Define
     ! Sensor info
     CHARACTER(SL) :: Sensor_Id        = ''
     INTEGER(Long) :: Sensor_Type      = INVALID_SENSOR
+    LOGICAL       :: Is_Active_Sensor = .FALSE.
     INTEGER(Long) :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER(Long) :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     ! Channel data arrays
     INTEGER(Long), ALLOCATABLE :: Sensor_Channel(:)              ! L
     INTEGER(Long), ALLOCATABLE :: Polarization(:)                ! L
+    REAL(Double),  ALLOCATABLE :: PolAngle(:)                    ! L, Units: [deg]
     INTEGER(Long), ALLOCATABLE :: Channel_Flag(:)                ! L
     REAL(Double) , ALLOCATABLE :: Frequency(:)                   ! L
     REAL(Double) , ALLOCATABLE :: Wavenumber(:)                  ! L
@@ -260,6 +276,7 @@ CONTAINS
     SpcCoeff%WMO_Satellite_ID  = INVALID_WMO_SATELLITE_ID
     SpcCoeff%WMO_Sensor_ID     = INVALID_WMO_SENSOR_ID
     SpcCoeff%Sensor_Type       = INVALID_SENSOR
+    SpcCoeff%Is_Active_Sensor  = .FALSE.
   END SUBROUTINE SpcCoeff_Destroy
 
 
@@ -309,6 +326,7 @@ CONTAINS
     ! Perform the allocation
     ALLOCATE( SpcCoeff%Sensor_Channel( n_Channels ),             &
               SpcCoeff%Polarization( n_Channels ),               &
+              SpcCoeff%PolAngle( n_Channels ),                   &
               SpcCoeff%Channel_Flag( n_Channels ),               &
               SpcCoeff%Frequency( n_Channels ),                  &
               SpcCoeff%Wavenumber( n_Channels ),                 &
@@ -328,6 +346,7 @@ CONTAINS
     ! ...Arrays
     SpcCoeff%Sensor_Channel             = 0
     SpcCoeff%Polarization               = INVALID_POLARIZATION
+    SpcCoeff%PolAngle                   = ZERO
     SpcCoeff%Channel_Flag               = 0
     SpcCoeff%Frequency                  = ZERO
     SpcCoeff%Wavenumber                 = ZERO
@@ -380,15 +399,25 @@ CONTAINS
     WRITE(*,'(3x,"Sensor_Id        :",1x,a )') TRIM(SpcCoeff%Sensor_Id)
     WRITE(*,'(3x,"WMO_Satellite_ID :",1x,i0)') SpcCoeff%WMO_Satellite_ID 
     WRITE(*,'(3x,"WMO_Sensor_ID    :",1x,i0)') SpcCoeff%WMO_Sensor_ID
-    WRITE(*,'(3x,"Sensor_Type      :",1x,a )') TRIM(SENSOR_TYPE_NAME(SpcCoeff%Sensor_Type))
+    IF ( SpcCoeff%Is_Active_Sensor ) THEN
+       WRITE(*,'(1x,"Active Sensor")') 
+    ENDIF
+    WRITE(*,'(3x,"Sensor_Type      :",1x,a )') TRIM(SENSOR_TYPE_NAME(SpcCoeff%Sensor_Type))    
     WRITE(*,'(3x,"Sensor_Channel   :")')
     WRITE(*,'(10(1x,i5,:))') SpcCoeff%Sensor_Channel
+
+    
     ! Data arrays
     IF ( SpcCoeff_IsMicrowaveSensor(SpcCoeff) ) THEN
       WRITE(*,'(3x,"Polarization               :")')
       DO n = 1, SpcCoeff%n_Channels
         WRITE(*,'(5x,"Channel ",i0,": ",a)') SpcCoeff%Sensor_Channel(n), &
                                              POLARIZATION_TYPE_NAME(SpcCoeff%Polarization(n))
+      END DO
+      WRITE(*,*) "Fixed Polarization Angle: "
+      DO n = 1, SpcCoeff%n_Channels
+        WRITE(*,'(3x,"Channel ",i0,": ")') SpcCoeff%Sensor_Channel(n)
+        WRITE(*,'(es22.15)') SpcCoeff%PolAngle(n)
       END DO
     END IF
     WRITE(*,'(3x,"Channel_Flag               :")')
@@ -647,12 +676,14 @@ CONTAINS
     ! ...First assign some scalars
     SC_Subset%Version          = SpcCoeff%Version
     SC_Subset%Sensor_Id        = SpcCoeff%Sensor_Id       
-    SC_Subset%Sensor_Type      = SpcCoeff%Sensor_Type     
+    SC_Subset%Sensor_Type      = SpcCoeff%Sensor_Type  
+    SC_Subset%Is_Active_Sensor = SpcCoeff%Is_Active_Sensor
     SC_Subset%WMO_Satellite_ID = SpcCoeff%WMO_Satellite_ID
     SC_Subset%WMO_Sensor_ID    = SpcCoeff%WMO_Sensor_ID   
     ! ...and now extract the subset
     SC_Subset%Sensor_Channel             = SpcCoeff%Sensor_Channel(idx)
     SC_Subset%Polarization               = SpcCoeff%Polarization(idx)
+    SC_Subset%PolAngle                   = SpcCoeff%PolAngle(idx)
     SC_Subset%Channel_Flag               = SpcCoeff%Channel_Flag(idx)
     SC_Subset%Frequency                  = SpcCoeff%Frequency(idx)
     SC_Subset%Wavenumber                 = SpcCoeff%Wavenumber(idx)
@@ -740,11 +771,11 @@ CONTAINS
     ! ...Check non-channel dimensions and ids
     DO j = 1, n_valid
       i = valid_index(j)
-      IF ( SC_Array(i)%Sensor_Type      /= SC_Array(valid_index(1))%Sensor_Type      .OR. & 
-           SC_Array(i)%WMO_Satellite_ID /= SC_Array(valid_index(1))%WMO_Satellite_ID .OR. &
-           SC_Array(i)%WMO_Sensor_ID    /= SC_Array(valid_index(1))%WMO_Sensor_ID         ) THEN
-        RETURN
-      END IF
+      IF ( SC_Array(i)%Sensor_Type      /= SC_Array(valid_index(1))%Sensor_Type ) RETURN
+      IF ( SC_Array(i)%Is_Active_Sensor .NEQV. SC_Array(valid_index(1))%Is_Active_Sensor ) RETURN
+      IF ( SC_Array(i)%WMO_Satellite_ID /= SC_Array(valid_index(1))%WMO_Satellite_ID ) RETURN
+      IF ( SC_Array(i)%WMO_Sensor_ID    /= SC_Array(valid_index(1))%WMO_Sensor_ID ) RETURN
+
     END DO
 
 
@@ -765,7 +796,8 @@ CONTAINS
     ELSE
       SpcCoeff%Sensor_Id = SC_Array(valid_index(1))%Sensor_Id
     END IF
-    SpcCoeff%Sensor_Type      = SC_Array(valid_index(1))%Sensor_Type     
+    SpcCoeff%Sensor_Type      = SC_Array(valid_index(1))%Sensor_Type   
+    SpcCoeff%Is_Active_Sensor      = SC_Array(valid_index(1))%Is_Active_Sensor
     SpcCoeff%WMO_Satellite_ID = SC_Array(valid_index(1))%WMO_Satellite_ID
     SpcCoeff%WMO_Sensor_ID    = SC_Array(valid_index(1))%WMO_Sensor_ID   
     ! ...and now concatenate the channel data
@@ -776,7 +808,8 @@ CONTAINS
       ch2 = ch1 + SC_Array(i)%n_Channels - 1
       
       SpcCoeff%Sensor_Channel(ch1:ch2)             = SC_Array(i)%Sensor_Channel            
-      SpcCoeff%Polarization(ch1:ch2)               = SC_Array(i)%Polarization 
+      SpcCoeff%Polarization(ch1:ch2)               = SC_Array(i)%Polarization
+      SpcCoeff%PolAngle(ch1:ch2)                   = SC_Array(i)%PolAngle
       SpcCoeff%Channel_Flag(ch1:ch2)               = SC_Array(i)%Channel_Flag 
       SpcCoeff%Frequency(ch1:ch2)                  = SC_Array(i)%Frequency    
       SpcCoeff%Wavenumber(ch1:ch2)                 = SC_Array(i)%Wavenumber   
@@ -1284,7 +1317,7 @@ CONTAINS
     Is_Set = SpcCoeff_IsSensor(SpcCoeff, ULTRAVIOLET_SENSOR)
   END FUNCTION SpcCoeff_IsUltravioletSensor
   
-
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1400,7 +1433,6 @@ CONTAINS
     CALL SpcCoeff_SetSensor(SpcCoeff, ULTRAVIOLET_SENSOR)
   END SUBROUTINE SpcCoeff_SetUltravioletSensor
   
-
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1426,6 +1458,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE SpcCoeff_ClearSensor(SpcCoeff)
     TYPE(SpcCoeff_type), INTENT(IN OUT) :: SpcCoeff
     SpcCoeff%Sensor_Type = INVALID_SENSOR
+    SpcCoeff%Is_Active_Sensor = .FALSE.
   END SUBROUTINE SpcCoeff_ClearSensor
   
 
@@ -1491,7 +1524,8 @@ CONTAINS
     IF ( (x%Sensor_Id        /= y%Sensor_Id       ) .OR. &
          (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
          (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) .OR. &
-         (x%Sensor_Type      /= y%Sensor_Type     ) ) RETURN
+         (x%Sensor_Type      /= y%Sensor_Type     ) .OR. &
+         (x%Is_Active_Sensor .NEQV. y%Is_Active_Sensor     )) RETURN
     ! ...Structures
     IF ( ACCoeff_Associated( x%AC ) .NEQV. ACCoeff_Associated( y%AC ) ) RETURN
     IF ( ACCoeff_Associated( x%AC ) .AND.  ACCoeff_Associated( y%AC ) ) THEN
@@ -1504,6 +1538,7 @@ CONTAINS
     ! ...Arrays
     IF ( ALL(x%Sensor_Channel                 ==    y%Sensor_Channel            ) .AND. &
          ALL(x%Polarization                   ==    y%Polarization              ) .AND. &
+         ALL(x%PolAngle                       ==    y%PolAngle                  ) .AND. &
          ALL(x%Channel_Flag                   ==    y%Channel_Flag              ) .AND. &
          ALL(x%Frequency                  .EqualTo. y%Frequency                 ) .AND. &
          ALL(x%Wavenumber                 .EqualTo. y%Wavenumber                ) .AND. &

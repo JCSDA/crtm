@@ -9,6 +9,14 @@
 !       Written by:     Paul van Delst, 03-Jan-2003
 !                       paul.vandelst@noaa.gov
 !
+! MODIFICATION HISTORY:
+! =====================
+!
+! Author:               Date:            Description:
+! =======               =====            ============
+! Patrick Stegmann      2021-01-05       Added TROPICS instrument data
+! Patrick Stegmann      2021-02-04       Removed MW_SensorData_DefineVersion
+!
 
 MODULE MW_SensorData_Define
 
@@ -30,6 +38,7 @@ MODULE MW_SensorData_Define
                                    FOURTH_STOKES_COMPONENT , &
                                    VL_POLARIZATION         , &
                                    HL_POLARIZATION         , &
+                                   CONST_MIXED_POLARIZATION, &
                                    plus45L_POLARIZATION    , &
                                    minus45L_POLARIZATION   , &
                                    VL_MIXED_POLARIZATION   , &
@@ -56,7 +65,6 @@ MODULE MW_SensorData_Define
   PUBLIC :: MW_SensorData_Inspect
   PUBLIC :: MW_SensorData_ValidRelease
   PUBLIC :: MW_SensorData_Info
-  PUBLIC :: MW_SensorData_DefineVersion
   PUBLIC :: MW_SensorData_Load
   PUBLIC :: MW_SensorData_Get_Sensor_Id
   
@@ -72,7 +80,7 @@ MODULE MW_SensorData_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
   ! Sensor id string length
@@ -114,6 +122,7 @@ MODULE MW_SensorData_Define
     INTEGER , ALLOCATABLE :: Sensor_Channel(:)     ! L
     INTEGER , ALLOCATABLE :: Zeeman(:)             ! L
     INTEGER , ALLOCATABLE :: Polarization(:)       ! L
+    INTEGER , ALLOCATABLE :: PolAngle(:)           ! L
     INTEGER , ALLOCATABLE :: n_Sidebands(:)        ! L
     REAL(fp), ALLOCATABLE :: Central_Frequency(:)  ! L
     REAL(fp), ALLOCATABLE :: IF_Band(:,:,:)        ! 2 x 2 x L
@@ -133,7 +142,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 67
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 68 ! PS
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   [ 'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -152,7 +161,8 @@ MODULE MW_SensorData_Define
     'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           ',&
     'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ','hamsr_grip          ',&
     'micromas_cs00       ','micromas_cs01       ','micromas_cs02       ','micromas_cs03       ',&
-    'micromas_cs04       ','micromas_cs05       ','geostorm_proposed   ','masc_cubesat        ' ]
+    'micromas_cs04       ','micromas_cs05       ','geostorm_proposed   ','masc_cubesat        ',&
+    'tropics_sv1_srf_v1']  ! PS
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   [  708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -175,7 +185,8 @@ MODULE MW_SensorData_Define
      XSAT, &                                                ! Hamsr-Grip, GRIP aircraft experiment
      XSAT, XSAT, XSAT, XSAT, XSAT, XSAT, &                  ! MicroMAS CubeSat-00 to -05
      XSAT, &                                                ! GeoStorm
-     XSAT ]                                                 ! MASC CubeSat (different from MicroMAS)
+     XSAT, &                                                ! MASC CubeSat (different from MicroMAS)
+     XSAT ]                                                 ! TROPICS Pathfinder Cubesat (PS)
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   [  623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -198,8 +209,8 @@ MODULE MW_SensorData_Define
      XSEN, &                                         ! Hamsr-Grip, GRIP aircraft experiment
      XSEN, XSEN, XSEN, XSEN, XSEN, XSEN, &           ! MicroMAS CubeSat-00 to -05
      XSEN, &                                         ! GeoStorm
-     XSEN ]                                          ! MASC CubeSat (different from MicroMAS)
-
+     XSEN, &                                         ! MASC CubeSat (different from MicroMAS)
+     XSEN ]                                          ! TROPICS Pathfinder Cubesat (PS)
 
   !#----------------------------------------------------------------------------#
   !                             Sensor channel data
@@ -230,6 +241,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_MICROMAS_CHANNELS = 10
   INTEGER, PARAMETER :: N_GEOSTORM_CHANNELS = 10
   INTEGER, PARAMETER :: N_MASC_CHANNELS     =  8
+  INTEGER, PARAMETER :: N_TROPICS_CHANNELS = 12  ! PS
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
@@ -261,8 +273,9 @@ MODULE MW_SensorData_Define
     N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, &  ! CubeSat-00 to -02 MicroMAS
     N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, &  ! CubeSat-03 to -05 MicroMAS
     N_GEOSTORM_CHANNELS, &                                            ! Proposed GeoStorm
-    N_MASC_CHANNELS ]                                                 ! Proposed MASC
-    
+    N_MASC_CHANNELS, &                                                ! Proposed MASC
+    N_TROPICS_CHANNELS ]                                              ! Proposed TROPICS (PS)   
+
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)           =[(i,i=1,N_MSU_CHANNELS     )]
   INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)       =[(i,i=1,N_AMSUA_CHANNELS   )]
@@ -288,6 +301,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MICROMAS_SENSOR_CHANNEL(N_MICROMAS_CHANNELS) =[(i,i=1,N_MICROMAS_CHANNELS)]
   INTEGER, PARAMETER :: GEOSTORM_SENSOR_CHANNEL(N_GEOSTORM_CHANNELS) =[(i,i=1,N_GEOSTORM_CHANNELS)]
   INTEGER, PARAMETER :: MASC_SENSOR_CHANNEL(N_MASC_CHANNELS)         =[(i,i=1,N_MASC_CHANNELS    )]
+  INTEGER, PARAMETER :: TROPICS_SENSOR_CHANNEL(N_TROPICS_CHANNELS)   =[(i,i=1,N_TROPICS_CHANNELS )] ! (PS)
 
 
   !#----------------------------------------------------------------------------#
@@ -332,6 +346,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MICROMAS_N_SIDEBANDS(N_MICROMAS_CHANNELS) = 1
   INTEGER, PARAMETER :: GEOSTORM_N_SIDEBANDS(N_GEOSTORM_CHANNELS) = 1
   INTEGER, PARAMETER :: MASC_N_SIDEBANDS(N_MASC_CHANNELS)         = 1
+  INTEGER, PARAMETER :: TROPICS_N_SIDEBANDS(N_TROPICS_CHANNELS) = 1 ! (PS)
  
 
   !#----------------------------------------------------------------------------#
@@ -1593,6 +1608,38 @@ MODULE MW_SensorData_Define
   REAL(fp), PARAMETER :: MASC_IF_BAND( 2, MAX_N_SIDEBANDS, N_MASC_CHANNELS ) = ZERO
 
 
+  ! TROPICS Pathfinder entry (PS)
+  ! -------------------------------------------------------
+  ! Central frequency in GHz
+  REAL(fp), PARAMETER :: TROPICS_F0( N_TROPICS_CHANNELS) = &
+            (/91.3_fp,  & ! ch1
+              114.4_fp, & ! ch2
+              115.8_fp, & ! ch3
+              116.7_fp, & ! ch4
+              117.2_fp, & ! ch5
+              117.9_fp, & ! ch6
+              118.2_fp, & ! ch7
+              118.6_fp, & ! ch8
+              184.1_fp, & ! ch9
+              186.1_fp, & ! ch10
+              190.1_fp, & ! ch11
+              204.8_fp/)     ! ch12
+  ! I/F band limits in GHz
+  REAL(fp), PARAMETER :: TROPICS_IF_BAND(2, MAX_N_SIDEBANDS, N_TROPICS_CHANNELS ) = &
+    RESHAPE( (/0.00_fp,2.5_fp,ZERO, ZERO, &  ! ch1
+               0.00_fp,0.69_fp,ZERO, ZERO, & ! ch2
+               0.00_fp,0.55_fp,ZERO, ZERO, & ! ch3
+               0.00_fp,0.39_fp,ZERO, ZERO, & ! ch4
+               0.00_fp,0.47_fp,ZERO, ZERO, & ! ch5
+               0.00_fp,0.35_fp,ZERO, ZERO, & ! ch6
+               0.00_fp,0.36_fp,ZERO, ZERO, & ! ch7
+               0.00_fp,0.56_fp,ZERO, ZERO, & ! ch8
+               0.00_fp,1.44_fp,ZERO, ZERO, & ! ch9
+               0.00_fp,1.47_fp,ZERO, ZERO, & ! ch10
+               0.00_fp,1.5_fp,ZERO, ZERO, &  ! ch11
+               0.00_fp,1.42_fp,ZERO, ZERO /), & ! ch12
+    (/2, MAX_N_SIDEBANDS, N_TROPICS_CHANNELS/) )
+
   !#----------------------------------------------------------------------------#
   !                           Sensor polarization data
   !#----------------------------------------------------------------------------#
@@ -1945,6 +1992,46 @@ MODULE MW_SensorData_Define
   ! -------
   INTEGER, PARAMETER :: MASC_POLARIZATION( N_MASC_CHANNELS )         = HL_POLARIZATION
 
+  ! TROPICS
+  ! -------
+  INTEGER, PARAMETER :: TROPICS_POLARIZATION( N_TROPICS_CHANNELS )    = &
+  (/ CONST_MIXED_POLARIZATION, & ! TROPICS ! ch1
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch2
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch3
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch4
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch5
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch6
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch7
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch8
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch9
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch10
+     CONST_MIXED_POLARIZATION, & ! TROPICS ! ch11
+     CONST_MIXED_POLARIZATION /) ! TROPICS ! ch12
+
+
+
+  !#----------------------------------------------------------------------------#
+  !                           Sensor polarization angle data
+  !#----------------------------------------------------------------------------#
+
+
+  ! TROPICS
+  ! -------
+  REAL(KIND=fp), PARAMETER :: TROPICS_POLANGLE( N_TROPICS_CHANNELS ) = &
+  (/ 70.0_fp, & ! TROPICS ch1 W-band
+     70.0_fp, & ! TROPICS ch2 F-band
+     70.0_fp, & ! TROPICS ch3 F-band
+     70.0_fp, & ! TROPICS ch4 F-band
+     70.0_fp, & ! TROPICS ch5 F-band
+     70.0_fp, & ! TROPICS ch6 F-band
+     70.0_fp, & ! TROPICS ch7 F-band
+     70.0_fp, & ! TROPICS ch8 F-band
+    -20.0_fp, & ! TROPICS ch9 G-band
+    -20.0_fp, & ! TROPICS ch10 G-band
+    -20.0_fp, & ! TROPICS ch11 G-band
+    -20.0_fp /) ! TROPICS ch12 G-band
+
+
 
 CONTAINS
 
@@ -2113,6 +2200,7 @@ CONTAINS
               MW_SensorData%Central_Frequency( n_Channels ), &
               MW_SensorData%Zeeman( n_Channels ), &
               MW_SensorData%Polarization( n_Channels ), &
+              MW_SensorData%PolAngle( n_Channels ), &
               MW_SensorData%n_Sidebands( n_Channels ), &
               MW_SensorData%IF_Band( 2, MAX_N_SIDEBANDS, n_Channels ), &
               MW_SensorData%Delta_Frequency( n_Channels ), &
@@ -2131,6 +2219,7 @@ CONTAINS
     MW_SensorData%Central_Frequency = ZERO
     MW_SensorData%Zeeman            = NO_ZEEMAN
     MW_SensorData%Polarization      = INVALID_POLARIZATION
+    MW_SensorData%PolAngle          = ZERO
     MW_SensorData%n_Sidebands       = 0
     MW_SensorData%IF_Band           = ZERO
     MW_SensorData%Delta_Frequency   = ZERO
@@ -2190,7 +2279,8 @@ CONTAINS
     WRITE(*,'(3x,"Polarization      :")')
     DO n = 1, MW_SensorData%n_Channels
       WRITE(*,'(5x,"Channel ",i0,": ",a)') MW_SensorData%Sensor_Channel(n), &
-                                           POLARIZATION_TYPE_NAME(MW_SensorData%Polarization(n))
+                                           POLARIZATION_TYPE_NAME(MW_SensorData%Polarization(n)), &
+                                           MW_SensorData%PolAngle(n)
     END DO
     WRITE(*,'(3x,"n_Sidebands       :")')
     WRITE(*,'(10(1x,i5,:))') MW_SensorData%n_Sidebands
@@ -2332,34 +2422,6 @@ CONTAINS
 
   END SUBROUTINE MW_SensorData_Info
  
- 
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       MW_SensorData_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL MW_SensorData_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE MW_SensorData_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE MW_SensorData_DefineVersion
 
 
 !----------------------------------------------------------------------------------
@@ -2799,6 +2861,13 @@ CONTAINS
         MW_SensorData%Polarization      = MASC_POLARIZATION
         MW_SensorData%n_Sidebands       = MASC_N_SIDEBANDS
         MW_SensorData%IF_Band           = MASC_IF_BAND
+      CASE('tropics_sv1_srf_v1') ! (PS)
+        MW_SensorData%Sensor_Channel    = TROPICS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = TROPICS_F0
+        MW_SensorData%Polarization      = TROPICS_POLARIZATION
+        MW_SensorData%PolAngle          = TROPICS_POLANGLE
+        MW_SensorData%n_Sidebands       = TROPICS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = TROPICS_IF_BAND
 
 
       ! No match! Should never get here!
@@ -3048,6 +3117,7 @@ CONTAINS
     IF ( ALL(x%Sensor_Channel       ==     y%Sensor_Channel    ) .AND. &
          ALL(x%Zeeman               ==     y%Zeeman            ) .AND. &
          ALL(x%Polarization         ==     y%Polarization      ) .AND. &
+         ALL(x%PolAngle             ==     y%PolAngle          ) .AND. &
          ALL(x%n_Sidebands          ==     y%n_Sidebands       ) .AND. &
          ALL(x%Central_Frequency .EqualTo. y%Central_Frequency ) .AND. &
          ALL(x%IF_Band           .EqualTo. y%IF_Band           ) .AND. &

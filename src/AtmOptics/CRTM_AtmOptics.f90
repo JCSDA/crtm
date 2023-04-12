@@ -9,6 +9,12 @@
 !                       Paul van Delst, paul.vandelst@noaa.gov
 !                       08-Jun-2005
 !
+!       Modified by:    Isaac Moradi,    Isaac.Moradi@nasa.gov
+!                       14-Nov-2021
+!                       Added the backscat_coefficient as well as layer to 
+!                       TOA transmittance with its AD and TL
+!
+
 
 MODULE CRTM_AtmOptics
 
@@ -207,8 +213,7 @@ CONTAINS
     INTEGER :: k
     k = atmoptics%n_layers
     transmittance = EXP(-ONE*SUM(atmoptics%optical_depth(1:k)))
-  END SUBROUTINE CRTM_Compute_Transmittance
-
+  END SUBROUTINE CRTM_Compute_Transmittance  
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -386,8 +391,9 @@ CONTAINS
 
 
       ! Save the unmodified optical parameters
-      AOvar%Optical_Depth(k) = AtmOptics%Optical_Depth(k)
-      AOvar%bs(k)            = AtmOptics%Single_Scatter_Albedo(k)
+      AOvar%Optical_Depth(k)         = AtmOptics%Optical_Depth(k)
+      AOvar%bs(k)                    = AtmOptics%Single_Scatter_Albedo(k)
+      AOvar%Backscat_Coefficient(k) = AtmOptics%Backscat_Coefficient(k)
       ! ...Initialise scattering dependent terms
       AOvar%w(k) = ZERO
 
@@ -402,18 +408,17 @@ CONTAINS
                                                  AtmOptics%Single_Scatter_Albedo(k)
           END DO
           ! ...Normalization requirement for energy conservation
-          AtmOptics%Phase_Coefficient(0,i,k) = POINT_5
+          AtmOptics%Phase_Coefficient(0,i,k) = POINT_5          
         END DO
+        
         AtmOptics%Delta_Truncation(k) = AtmOptics%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)
-
-
+         
         ! Redfine the total optical depth and single scattering
         ! albedo for the delta-function adjustment
         AtmOptics%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) )) * &
                                      AtmOptics%Optical_Depth(k)
         AtmOptics%Single_Scatter_Albedo(k) = ( ONE - AtmOptics%Delta_Truncation(k) ) * AOvar%w(k)   / &
                                              ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) )
-
       END IF Significant_Scattering
 
 

@@ -28,7 +28,7 @@ PROGRAM IRwaterCoeff_Inspect
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'IRwaterCoeff_Inspect'
-  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
 
   ! ---------
   ! Variables

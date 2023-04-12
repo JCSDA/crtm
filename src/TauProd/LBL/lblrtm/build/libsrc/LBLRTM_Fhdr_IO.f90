@@ -39,13 +39,13 @@ MODULE LBLRTM_Fhdr_IO
   ! Procedures
   PUBLIC :: LBLRTM_Fhdr_Read
   PUBLIC :: LBLRTM_Fhdr_Write
-  PUBLIC :: LBLRTM_Fhdr_IOVersion
+  !PUBLIC :: LBLRTM_Fhdr_IOVersion
 
 
   ! -------------------------
   ! PRIVATE Module parameters
   ! -------------------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -399,10 +399,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Fhdr_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Fhdr_IOVersion
+  !SUBROUTINE LBLRTM_Fhdr_IOVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Fhdr_IOVersion
 
 
 END MODULE LBLRTM_Fhdr_IO

@@ -1,4 +1,4 @@
-!
+
 ! CRTM_AerosolScatter
 !
 !
@@ -17,7 +17,10 @@
 !                       Implemented CMAQ aerosol (based on Quanhua's v2.0.2).
 !       Modified by:    Yingtao Ma, 2020/8/13; yingtao.ma@noaa.gov
 !                       Rewrote the TL/AD code to correctly handle size variance.
-!
+!       Modified by     Cheng Dang, 20-Nov-2020;
+!                       dangch@ucar.edu
+!                       Update FWD/TL/AD to include RH dimension and GOCART-GEOS5 table
+!                       14-Mar-2021; Update to include NAAPS table
 ! (C) Copyright 2019 UCAR
 !
 
@@ -86,12 +89,10 @@ MODULE CRTM_AerosolScatter
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! Number of stream angle definitions
-  INTEGER, PARAMETER :: TWO_STREAMS       =  2
   INTEGER, PARAMETER :: FOUR_STREAMS      =  4
   INTEGER, PARAMETER :: SIX_STREAMS       =  6
   INTEGER, PARAMETER :: EIGHT_STREAMS     =  8
   INTEGER, PARAMETER :: SIXTEEN_STREAMS   = 16
-  INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
 
 
 CONTAINS
@@ -204,7 +205,6 @@ CONTAINS
    ! AeroC lookup table corresponding to the
    ! number of streams
    SELECT CASE(AScat%n_Legendre_Terms)
-      CASE (TWO_STREAMS)    ; AScat%lOffset = 0
       CASE (FOUR_STREAMS)   ; AScat%lOffset = 0
       CASE (SIX_STREAMS)    ; AScat%lOffset = 5
       CASE (EIGHT_STREAMS)  ; AScat%lOffset = 12
@@ -234,7 +234,6 @@ CONTAINS
       nAerosol_Layers = COUNT(Layer_Mask)
       IF ( nAerosol_Layers == 0 ) CYCLE Aerosol_loop
 
-
       ! --------------------------------------
       ! Loop over the current Aerosol's Layers
       ! --------------------------------------
@@ -248,6 +247,7 @@ CONTAINS
                               Atm%Aerosol(n)%Type                   , & ! Input
                               Atm%Aerosol(n)%Effective_Radius(ka)   , & ! Input
                               Atm%Aerosol(n)%Effective_Variance(ka) , & ! Input
+                              Atm%Relative_Humidity(ka)             , & ! Input
                               ASV%ke(ka,n)                          , & ! Output
                               ASV%w(ka,n)                           , & ! Output
                               ASV%pcoeff(:,:,ka,n)                  , & ! Output
@@ -469,14 +469,12 @@ CONTAINS
         ka = Layer_Index(k)
 
         CALL Get_Aerosol_Opt_TL(AScat_TL                                , & ! Input
-                                Frequency                               , & ! Input
                                 Atm%Aerosol(n)%Type                     , & ! Input
-                                Atm%Aerosol(n)%Effective_Radius(ka)     , & ! FWD Input
-                                Atm%Aerosol(n)%Effective_Variance(ka)   , & ! FWD Input
-                                Atm_TL%Aerosol(n)%Effective_Radius(ka)  , & ! TL  Input
-                                Atm_TL%Aerosol(n)%Effective_Variance(ka), & ! TL  Input
                                 ASV%ke(ka,n)                            , & ! Input
                                 ASV%w(ka,n)                             , & ! Input
+                                Atm_TL%Aerosol(n)%Effective_Radius(ka)  , & ! TL  Input
+                                Atm_TL%Aerosol(n)%Effective_Variance(ka), & ! TL  Input
+                                Atm_TL%Relative_Humidity(ka)            , & ! TL  Input
                                 ke_TL                                   , & ! TL  Output
                                 w_TL                                    , & ! TL  Output
                                 pcoeff_TL                               , & ! TL  Output
@@ -735,10 +733,7 @@ CONTAINS
         END IF
 
         CALL Get_Aerosol_Opt_AD(AScat_AD                                , & ! Input
-                                Frequency                               , & ! Input
                                 Atm%Aerosol(n)%Type                     , & ! Input
-                                Atm%Aerosol(n)%Effective_Radius(ka)     , & ! FWD Input
-                                Atm%Aerosol(n)%Effective_Variance(ka)   , & ! FWD Input
                                 ASV%ke(ka,n)                            , & ! input
                                 ASV%w(ka,n)                             , & ! input
                                 ke_AD                                   , & ! AD Input
@@ -746,6 +741,7 @@ CONTAINS
                                 pcoeff_AD                               , & ! AD Input
                                 Atm_AD%Aerosol(n)%Effective_Radius(ka)  , & ! AD  Output
                                 Atm_AD%Aerosol(n)%Effective_Variance(ka), & ! AD  Output
+                                Atm_AD%Relative_Humidity(ka)            , & ! AD  Output
                                 ASV%asi(ka,n)                           )   ! Interpolation
 
       END DO Aerosol_Layer_loop
@@ -777,6 +773,7 @@ CONTAINS
                               Aerosol_Type  , &  ! Input see CRTM_Aerosol_Define.f90
                               Reff          , &  ! Input effective radius (mm)
                               Rsig          , &  ! Input effective variance, unitless
+                              RH            , &  ! Input relative humidity, unitless
                               ke            , &  ! Output extinction coefficient (=~ optical depth)
                               w             , &  ! Output single scattering albedo
                               pcoeff        , &  ! Output spherical Legendre coefficients
@@ -786,49 +783,54 @@ CONTAINS
     REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Aerosol_Type
     REAL(fp)                  , INTENT(IN)     :: Reff, Rsig
+    REAL(fp)                  , INTENT(IN)     :: RH
     REAL(fp)                  , INTENT(OUT)    :: ke
     REAL(fp)                  , INTENT(OUT)    :: w
     REAL(fp)                  , INTENT(IN OUT) :: pcoeff(0:,:)
     TYPE(ASinterp_type)       , INTENT(IN OUT) :: asi
     ! Local variables
     INTEGER  :: k, l, m
+    INTEGER  :: fix_rh     ! Fixed index for dimension Relative Humidity
+    INTEGER  :: fix_sig    ! Fixed index for dimension Radius Deviation
+    INTEGER  :: fix_r      ! Fixed index for dimension Effective Radius
 
     ! Get the aerosol type LUT index
     ! ------------------------------
-
     k = AerosolCoeff_typeID_to_index( AeroC, Aerosol_Type )
 
-    ! Find the Frequency and effective
-    ! radius indices for interpolation
-    ! --------------------------------
+    ! Get the frequency indices
+    ! ------------------------------
+    ! Find the Frequency indices for interpolation
     asi%f_int = MAX( MIN( AeroC%Frequency( AeroC%n_Wavelengths ), Frequency ), AeroC%Frequency(1) )
     CALL find_index( AeroC%Frequency(:), asi%f_int, asi%i1, asi%i2, asi%f_outbound )
     asi%f = AeroC%Frequency( asi%i1:asi%i2 )
-
-    asi%r_int = MAX(MIN(AeroC%Reff(AeroC%n_Radii,k),Reff),AeroC%Reff(1,k))
-    CALL find_index(AeroC%Reff(:,k), asi%r_int, asi%j1,asi%j2, asi%r_outbound)
-    asi%r = AeroC%Reff(asi%j1:asi%j2,k)
-
-    ! Calculate the interpolating polynomials
-    ! ---------------------------------------
-    ! Frequency term
+    ! Calculate the interpolating polynomials for frequency
     CALL LPoly( asi%f, asi%f_int, &  ! Input
                 asi%wlp           )  ! Output
-    ! Effective radius term
-    CALL LPoly( asi%r, asi%r_int, &  ! Input
-                asi%xlp           )  ! Output
 
+    ! Perform Interpolation
+    ! ---------------------
+    IF ( AeroC%Scheme == 'CRTM' ) THEN
+      ! Fixed indices
+      fix_rh  = 1
+      fix_sig = 1
 
-   ! Perform Interpolation
-   ! ---------------------
-   IF ( AeroC%Scheme == 'GOCART' ) THEN
-      CALL interp_2D( AeroC%ke( asi%i1:asi%i2, asi%j1:asi%j2, 1, k), asi%wlp, asi%xlp, ke )
-      CALL interp_2D( AeroC%w(  asi%i1:asi%i2, asi%j1:asi%j2, 1, k), asi%wlp, asi%xlp, w  )
+      ! Find effective radius indices for Interpolation
+      asi%r_int = MAX(MIN(AeroC%Reff(AeroC%n_Radii,k),Reff),AeroC%Reff(1,k))
+      CALL find_index(AeroC%Reff(:,k), asi%r_int, asi%j1,asi%j2, asi%r_outbound)
+      asi%r = AeroC%Reff(asi%j1:asi%j2,k)
+      ! Calculate the interpolating polynomials for effective radius
+      CALL LPoly( asi%r, asi%r_int, &  ! Input
+                  asi%xlp           )  ! Output
+
+      ! Perform Interpolation
+      CALL interp_2D( AeroC%ke( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k), asi%wlp, asi%xlp, ke )
+      CALL interp_2D( AeroC%w(  asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k), asi%wlp, asi%xlp, w  )
       IF (AerosolScatter%n_Phase_Elements > 0 .and. AerosolScatter%Include_Scattering ) THEN
          pcoeff(0,1) = POINT_5
          DO m = 1, AerosolScatter%n_Phase_Elements
          DO l = 1, AerosolScatter%n_Legendre_Terms
-            CALL interp_2D( AeroC%pcoeff( asi%i1:asi%i2, asi%j1:asi%j2, 1, k, l+AerosolScatter%lOffset, m), &
+            CALL interp_2D( AeroC%pcoeff( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k, l+AerosolScatter%lOffset, m), &
                             asi%wlp, asi%xlp, pcoeff(l,m) )
          END DO
          END DO
@@ -837,34 +839,74 @@ CONTAINS
          ke = ke * (ONE- w)
       END IF
 
-   ELSE ! AeroC%Scheme == 'CMAQ'
+    ELSE IF ( AeroC%Scheme == 'CMAQ' ) THEN
+      ! Fixed indices
+      fix_rh  = 1
 
-     !Find size variance indices for interpolation
-     asi%v_int = MAX(MIN(AeroC%Rsig(AeroC%n_Sigma,k),Rsig),AeroC%Rsig(1,k))
-     CALL find_index(AeroC%Rsig(:,k), asi%v_int, asi%k1,asi%k2, asi%v_outbound)
-     asi%v = AeroC%Rsig(asi%k1:asi%k2,k)
+      ! Find effective radius indices for Interpolation
+      asi%r_int = MAX(MIN(AeroC%Reff(AeroC%n_Radii,k),Reff),AeroC%Reff(1,k))
+      CALL find_index(AeroC%Reff(:,k), asi%r_int, asi%j1,asi%j2, asi%r_outbound)
+      asi%r = AeroC%Reff(asi%j1:asi%j2,k)
+      ! Calculate the interpolating polynomials for effective radius
+      CALL LPoly( asi%r, asi%r_int, &  ! Input
+                  asi%xlp           )  ! Output
 
-      !Calculate the interpolating polynomials for size variance
+      ! Find size variance indices for interpolation
+      asi%v_int = MAX(MIN(AeroC%Rsig(AeroC%n_Sigma,k),Rsig),AeroC%Rsig(1,k))
+      CALL find_index(AeroC%Rsig(:,k), asi%v_int, asi%k1,asi%k2, asi%v_outbound)
+      asi%v = AeroC%Rsig(asi%k1:asi%k2,k)
+
+      ! Calculate the interpolating polynomials for size variance
       CALL LPoly( asi%v, asi%v_int, &  ! Input
-                asi%vlp           )  ! Output
+                  asi%vlp           )  ! Output
 
-      !Perform Interpolation
-      CALL interp_3D( AeroC%ke( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k), asi%wlp, asi%xlp, asi%vlp, ke )
-      CALL interp_3D( AeroC%w(  asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k), asi%wlp, asi%xlp, asi%vlp, w  )
+      ! Perform Interpolation
+      CALL interp_3D( AeroC%ke( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k), asi%wlp, asi%xlp, asi%vlp, ke )
+      CALL interp_3D( AeroC%w(  asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k), asi%wlp, asi%xlp, asi%vlp, w  )
       IF (AerosolScatter%n_Phase_Elements > 0 .and. AerosolScatter%Include_Scattering ) THEN
-        pcoeff(0,1) = POINT_5
-        DO m = 1, AerosolScatter%n_Phase_Elements
-        DO l = 1, AerosolScatter%n_Legendre_Terms
-           CALL interp_3D( AeroC%pcoeff( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k, l+AerosolScatter%lOffset, m), &
-                           asi%wlp, asi%xlp, asi%vlp, pcoeff(l,m) )
-        END DO
-        END DO
+         pcoeff(0,1) = POINT_5
+         DO m = 1, AerosolScatter%n_Phase_Elements
+         DO l = 1, AerosolScatter%n_Legendre_Terms
+            CALL interp_3D( AeroC%pcoeff( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k, l+AerosolScatter%lOffset, m), &
+                            asi%wlp, asi%xlp, asi%vlp, pcoeff(l,m) )
+         END DO
+         END DO
       ELSE
-        !Absorption coefficient
-        ke = ke * (ONE- w)
+         ! Absorption coefficient
+         ke = ke * (ONE- w)
       END IF
 
-   END IF !IF ( AeroC%Scheme == 'GOCART') THEN
+    ELSE IF ( AeroC%Scheme == 'GOCART-GEOS5' .OR. AeroC%Scheme == 'NAAPS' ) THEN
+      ! Fixed indices
+      fix_sig = 1
+      fix_r   = 1
+
+      ! Find relative humidty for interpolation
+      asi%h_int = MAX(MIN(AeroC%RH(AeroC%n_RH),RH),AeroC%RH(1))
+      CALL find_index(AeroC%RH(:), asi%h_int, asi%h1,asi%h2, asi%h_outbound)
+      asi%h = AeroC%RH(asi%h1:asi%h2)
+      ! Calculate the interpolating polynomials for relative  humidity
+      CALL LPoly( asi%h, asi%h_int, &  ! Input
+                  asi%hlp           )  ! Output
+
+      ! Perform Interpolation
+      CALL interp_2D( AeroC%ke( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k), asi%wlp, asi%hlp, ke )
+      CALL interp_2D( AeroC%w(  asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k), asi%wlp, asi%hlp, w  )
+      IF (AerosolScatter%n_Phase_Elements > 0 .and. AerosolScatter%Include_Scattering ) THEN
+         pcoeff(0,1) = POINT_5
+         DO m = 1, AerosolScatter%n_Phase_Elements
+         DO l = 1, AerosolScatter%n_Legendre_Terms
+            CALL interp_2D( AeroC%pcoeff( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k, l+AerosolScatter%lOffset, m), &
+                            asi%wlp, asi%hlp, pcoeff(l,m) )
+         END DO
+         END DO
+      ELSE
+         ! Absorption coefficient
+         ke = ke * (ONE- w)
+      END IF
+
+
+   END IF !IF ( AeroC%Scheme == 'CRTM') THEN
 
   END SUBROUTINE Get_Aerosol_Opt
 
@@ -877,15 +919,14 @@ CONTAINS
   !   asymmetry factor (g_TL), and
   !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
+
   SUBROUTINE Get_Aerosol_Opt_TL(AerosolScatter_TL, &  ! Input  AerosolScatterTL structure
-                                Frequency        , &  ! Input  in cm^-1
                                 Aerosol_Type     , &  ! Input  see CRTM_Aerosol_Define.f90
-                                Reff             , &  ! Input  FWD effective radius
-                                Rsig             , &  ! Input  FWD effective radius
-                                Reff_TL          , &  ! Input  TL effective radius (mm)
-                                Rsig_TL          , &  ! Input  TL effective radius (mm)
                                 ke               , &  ! Input
                                 w                , &  ! Input
+                                Reff_TL          , &  ! Input  TL effective radius (mm)
+                                Rsig_TL          , &  ! Input  TL effective radius (mm)
+                                RH_TL            , &  ! Input  TL effective radius (mm)
                                 ke_TL            , &  ! Output TL extinction coefficient (=~ optical depth)
                                 w_TL             , &  ! Output TL single scattering albedo
                                 pcoeff_TL        , &  ! TL  Output spherical Legendre coefficients
@@ -893,21 +934,21 @@ CONTAINS
 
     ! Arguments
     TYPE(CRTM_AtmOptics_type),  INTENT(IN)     :: AerosolScatter_TL
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                   INTENT(IN)     :: Reff, Rsig
-    REAL(fp),                   INTENT(IN)     :: Reff_TL, Rsig_TL
     REAL(fp),                   INTENT(IN)     :: ke, w
-    REAL(fp),                   INTENT(OUT)    :: ke_TL
-    REAL(fp),                   INTENT(OUT)    :: w_TL
+    REAL(fp),                   INTENT(IN)     :: Reff_TL, Rsig_TL, RH_TL
+    REAL(fp),                   INTENT(OUT)    :: ke_TL, w_TL
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
     TYPE(ASinterp_type),        INTENT(IN)     :: asi
     ! Local variables
     INTEGER  :: k, l, m
-    REAL(fp) :: f_int_TL, r_int_TL, v_int_TL
-    REAL(fp) :: f_TL(NPTS), r_TL(NPTS), v_TL(NPTS)
+    INTEGER  :: fix_rh     ! Fixed index for dimension Relative Humidity
+    INTEGER  :: fix_sig    ! Fixed index for dimension Radius Deviation
+    INTEGER  :: fix_r      ! Fixed index for dimension Effective Radius
+    REAL(fp) :: f_int_TL, r_int_TL, v_int_TL, h_int_TL
+    REAL(fp) :: f_TL(NPTS), r_TL(NPTS), v_TL(NPTS), h_TL(NPTS)
     REAL(fp) :: zg_TL(NPTS,NPTS), zc_TL(NPTS,NPTS,NPTS)
-    TYPE(LPoly_type) :: wlp_TL, xlp_TL, vlp_TL
+    TYPE(LPoly_type) :: wlp_TL, xlp_TL, vlp_TL, hlp_TL
 !JR Static initialization means only 1 copy of the variable. OpenMP over profiles
 !JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
 !JR    REAL(fp), POINTER :: z(:,:) => NULL()
@@ -915,13 +956,11 @@ CONTAINS
     NULLIFY (zg)
     NULLIFY (zc)
 
-    !yma k = Aerosol_Type_Index( Aerosol_Type )
-
     ! Setup
     ! -----
     ! No TL output when all dimensions
     ! are outside LUT bounds
-    IF ( asi%f_outbound .AND. asi%r_outbound .AND. asi%v_outbound ) THEN
+    IF ( asi%f_outbound .AND. asi%r_outbound .AND. asi%v_outbound .AND. asi%h_outbound) THEN
       ke_TL     = ZERO
       w_TL      = ZERO
       pcoeff_TL = ZERO
@@ -934,6 +973,8 @@ CONTAINS
     r_TL     = ZERO
     v_int_TL = Rsig_TL
     v_TL     = ZERO
+    h_int_TL = RH_TL
+    h_TL     = ZERO
     zg_TL = ZERO
     zc_TL = ZERO
 
@@ -945,16 +986,6 @@ CONTAINS
                    asi%wlp,          & ! FWD Input
                    f_TL, f_int_TL,   & ! TL  Input
                    wlp_TL            ) ! TL  Output
-    ! Effective radius term
-    CALL LPoly_TL( asi%r, asi%r_int, & ! FWD Input
-                   asi%xlp,          & ! FWD Input
-                   r_TL, r_int_TL,   & ! TL  Input
-                   xlp_TL            ) ! TL  Output
-    ! Size variance term
-    CALL LPoly_TL( asi%v, asi%v_int, & ! FWD Input
-                   asi%vlp,          & ! FWD Input
-                   v_TL, v_int_TL,   & ! TL  Input
-                   vlp_TL            ) ! TL  Output
 
 
     ! Get the aerosol type LUT index
@@ -962,30 +993,39 @@ CONTAINS
     k = AerosolCoeff_typeID_to_index( AeroC, Aerosol_Type )
 
 
-   ! Perform Interpolation
-   ! ---------------------
-   !
-   IF ( AeroC%Scheme == 'GOCART' ) THEN
+    ! Perform Interpolation
+    ! ---------------------
+    !
+    IF ( AeroC%Scheme == 'CRTM' ) THEN
+      ! Fixed indices
+      fix_rh  = 1
+      fix_sig = 1
+
+      ! Effective radius term
+      CALL LPoly_TL( asi%r, asi%r_int, & ! FWD Input
+                     asi%xlp,          & ! FWD Input
+                     r_TL, r_int_TL,   & ! TL  Input
+                     xlp_TL            ) ! TL  Output
 
       ! Extinction coefficient
-      zg => AeroC%ke( asi%i1:asi%i2, asi%j1:asi%j2, 1, k)
+      zg => AeroC%ke( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k)
       CALL interp_2D_TL( zg   , asi%wlp, asi%xlp, &  ! FWD Input
                          zg_TL, wlp_TL , xlp_TL , &  ! TL  Input
-                         ke_TL                   )   ! TL  Output
+                         ke_TL                    )  ! TL  Output
       ! Single scatter albedo
-      zg => AeroC%w( asi%i1:asi%i2, asi%j1:asi%j2, 1, k)
+      zg => AeroC%w( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k)
       CALL interp_2D_TL( zg   , asi%wlp, asi%xlp, &  ! FWD Input
                          zg_TL, wlp_TL , xlp_TL , &  ! TL  Input
-                         w_TL                    )   ! TL  Output
+                         w_TL                     )  ! TL  Output
       ! Phase matrix coefficients
       IF (AerosolScatter_TL%n_Phase_Elements > 0 .and. AerosolScatter_TL%Include_Scattering ) THEN
          pcoeff_TL(0,1) = ZERO
          DO m = 1, AerosolScatter_TL%n_Phase_Elements
          DO l = 1, AerosolScatter_TL%n_Legendre_Terms
-            zg => AeroC%pcoeff( asi%i1:asi%i2, asi%j1:asi%j2, 1, k,l+AerosolScatter_TL%lOffset,m)
+            zg => AeroC%pcoeff( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k,l+AerosolScatter_TL%lOffset,m)
             CALL interp_2D_TL( zg   , asi%wlp, asi%xlp, &  ! FWD Input
                                zg_TL, wlp_TL , xlp_TL , &  ! TL  Input
-                               pcoeff_TL(l,m)          )   ! TL  Output
+                               pcoeff_TL(l,m)           )  ! TL  Output
          END DO
          END DO
       ELSE
@@ -998,15 +1038,29 @@ CONTAINS
       END IF
       NULLIFY(zg)
 
-   ELSE ! AeroC%Scheme == 'CMAQ'
+    ELSE IF ( AeroC%Scheme == 'CMAQ' ) THEN
+      ! Fixed indices
+      fix_rh  = 1
+
+      ! Effective radius term
+      CALL LPoly_TL( asi%r, asi%r_int, & ! FWD Input
+                     asi%xlp,          & ! FWD Input
+                     r_TL, r_int_TL,   & ! TL  Input
+                     xlp_TL            ) ! TL  Output
+
+      ! Size variance
+      CALL LPoly_TL( asi%v, asi%v_int, & ! FWD Input
+                     asi%vlp,          & ! FWD Input
+                     v_TL, v_int_TL,   & ! TL  Input
+                     vlp_TL            ) ! TL  Output
 
       ! Extinction coefficient
-      zc => AeroC%ke( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k)
+      zc => AeroC%ke( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k)
       CALL interp_3D_TL( zc   , asi%wlp, asi%xlp, asi%vlp, &  ! FWD Input
                          zc_TL, wlp_TL , xlp_TL , vlp_TL , &  ! TL  Input
                          ke_TL                             )  ! TL  Output
       ! Single scatter albedo
-      zc => AeroC%w( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k)
+      zc => AeroC%w( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k)
       CALL interp_3D_TL( zc   , asi%wlp, asi%xlp, asi%vlp, &  ! FWD Input
                          zc_TL, wlp_TL , xlp_TL , vlp_TL , &  ! TL  Input
                          w_TL                              )  ! TL  Output
@@ -1015,7 +1069,7 @@ CONTAINS
          pcoeff_TL(0,1) = ZERO
          DO m = 1, AerosolScatter_TL%n_Phase_Elements
          DO l = 1, AerosolScatter_TL%n_Legendre_Terms
-            zc => AeroC%pcoeff( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k,l+AerosolScatter_TL%lOffset,m)
+            zc => AeroC%pcoeff( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k,l+AerosolScatter_TL%lOffset,m)
             CALL interp_3D_TL( zc   , asi%wlp, asi%xlp, asi%vlp, &  ! FWD Input
                                zc_TL, wlp_TL , xlp_TL , vlp_TL , &  ! TL  Input
                                pcoeff_TL(l,m)                    )  ! TL  Output
@@ -1031,7 +1085,49 @@ CONTAINS
       END IF
       NULLIFY(zc)
 
-   END IF !IF ( AeroC%Scheme == 'GOCART' ) THEN
+   ELSE IF ( AeroC%Scheme == 'GOCART-GEOS5' .OR. AeroC%Scheme == 'NAAPS' ) THEN
+     ! Fixed indices
+     fix_sig  = 1
+     fix_r    = 1
+
+     ! Relative humidity
+     CALL LPoly_TL( asi%h, asi%h_int, & ! FWD Input
+                    asi%hlp,          & ! FWD Input
+                    h_TL, h_int_TL,   & ! TL  Input
+                    hlp_TL            ) ! TL  Output
+
+     ! Extinction coefficient
+     zg => AeroC%ke( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k)
+     CALL interp_2D_TL( zg   , asi%wlp, asi%hlp, &  ! FWD Input
+                        zg_TL, wlp_TL , hlp_TL , &  ! TL  Input
+                        ke_TL                    )  ! TL  Output
+     ! Single scatter albedo
+     zg => AeroC%w( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k)
+     CALL interp_2D_TL( zg   , asi%wlp, asi%hlp, &  ! FWD Input
+                        zg_TL, wlp_TL , hlp_TL , &  ! TL  Input
+                        w_TL                     )  ! TL  Output
+     ! Phase matrix coefficients
+     IF (AerosolScatter_TL%n_Phase_Elements > 0 .and. AerosolScatter_TL%Include_Scattering ) THEN
+        pcoeff_TL(0,1) = ZERO
+        DO m = 1, AerosolScatter_TL%n_Phase_Elements
+        DO l = 1, AerosolScatter_TL%n_Legendre_Terms
+           zg => AeroC%pcoeff( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k,l+AerosolScatter_TL%lOffset,m)
+           CALL interp_2D_TL( zg   , asi%wlp, asi%hlp, &  ! FWD Input
+                              zg_TL, wlp_TL , hlp_TL , &  ! TL  Input
+                              pcoeff_TL(l,m)           )  ! TL  Output
+        END DO
+        END DO
+     ELSE
+        ! Absorption coefficient
+        IF( w < ONE ) THEN
+        ke_TL = ke_TL * (ONE - w) - ke/(ONE -w) * w_TL
+        ELSE
+        ke_TL = ZERO
+        END IF
+     END IF
+     NULLIFY(zg)
+
+   END IF !IF ( AeroC%Scheme == 'CRTM' ) THEN
 
   END SUBROUTINE Get_Aerosol_Opt_TL
 
@@ -1045,10 +1141,7 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_AD)
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_AD( AerosolScatter_AD, & ! Input AerosolScatter AD structure
-                                 Frequency        , & ! Input Frequency in cm^-1
                                  Aerosol_Type     , & ! Input see CRTM_Aerosol_Define.f90
-                                 Reff             , & ! FWD Input mode radius
-                                 Rsig             , & ! FWD Input radius deviation
                                  ke               , & ! Input
                                  w                , & ! Input
                                  ke_AD            , & ! AD Input extinction cross section
@@ -1056,24 +1149,28 @@ CONTAINS
                                  pcoeff_AD        , & ! AD Input spherical Legendre coefficients
                                  Reff_AD          , & ! AD Outputmode radius
                                  Rsig_AD          , & ! AD Output radius deviation
+                                 RH_AD            , & ! AD Output relative humidity
                                  asi                ) ! Input interpolation data
     ! Arguments
     TYPE(CRTM_AtmOptics_type),  INTENT(IN)     :: AerosolScatter_AD
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                   INTENT(IN)     :: Reff, Rsig
     REAL(fp),                   INTENT(IN)     :: ke, w
     REAL(fp),                   INTENT(IN OUT) :: ke_AD            ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: w_AD             ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:)  ! AD Input
-    REAL(fp),                   INTENT(IN OUT) :: Reff_AD, Rsig_AD ! AD Output
+    REAL(fp),                   INTENT(IN OUT) :: Reff_AD          ! AD Output
+    REAL(fp),                   INTENT(IN OUT) :: Rsig_AD          ! AD Output
+    REAL(fp),                   INTENT(IN OUT) :: RH_AD            ! AD Output
     TYPE(ASinterp_type),        INTENT(IN)     :: asi
     ! Local variables
     INTEGER  :: k, l, m
-    REAL(fp) :: f_int_AD, r_int_AD, v_int_AD
-    REAL(fp) :: f_AD(NPTS), r_AD(NPTS), v_AD(NPTS)
+    INTEGER  :: fix_rh     ! Fixed index for dimension Relative Humidity
+    INTEGER  :: fix_sig    ! Fixed index for dimension Radius Deviation
+    INTEGER  :: fix_r      ! Fixed index for dimension Effective Radius
+    REAL(fp) :: f_int_AD, r_int_AD, v_int_AD, h_int_AD
+    REAL(fp) :: f_AD(NPTS), r_AD(NPTS), v_AD(NPTS), h_AD(NPTS)
     REAL(fp) :: zg_AD(NPTS,NPTS), zc_AD(NPTS,NPTS,NPTS)
-    TYPE(LPoly_type) :: wlp_AD, xlp_AD, vlp_AD
+    TYPE(LPoly_type) :: wlp_AD, xlp_AD, vlp_AD, hlp_AD
 !JR Static initialization means only 1 copy of the variable. OpenMP over profiles
 !JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
 !JR    REAL(fp), POINTER :: z(:,:) => NULL()
@@ -1085,26 +1182,30 @@ CONTAINS
     ! -----
     ! No AD output all dimensions
     ! are outside LUT bounds
-    IF ( asi%f_outbound .AND. asi%r_outbound .AND. asi%v_outbound ) THEN
-      Reff_AD = ZERO
+    IF ( asi%f_outbound .AND. asi%r_outbound .AND. asi%v_outbound .AND. asi%h_outbound) THEN
+      Reff_AD   = ZERO
       ke_AD     = ZERO
       w_AD      = ZERO
       pcoeff_AD = ZERO
+      Rsig_AD   = ZERO
+      RH_AD   = ZERO
       RETURN
     END IF
     ! Initialise local adjoint variables
     f_int_AD = ZERO
     r_int_AD = ZERO
     v_int_AD = ZERO
+    h_int_AD = ZERO
     f_AD = ZERO
     r_AD = ZERO
     v_AD = ZERO
+    h_AD = ZERO
     zg_AD = ZERO
     zc_AD = ZERO
     CALL Clear_LPoly(wlp_AD)
     CALL Clear_LPoly(xlp_AD)
     CALL Clear_LPoly(vlp_AD)
-
+    CALL Clear_LPoly(hlp_AD)
 
     ! Get the aerosol type LUT index
     ! ------------------------------
@@ -1113,15 +1214,19 @@ CONTAINS
    ! Perform interpolation
    ! ---------------------
 
-   IF ( AeroC%Scheme == 'GOCART' ) THEN
+   IF ( AeroC%Scheme == 'CRTM' ) THEN
+      ! Fixed indices
+      fix_rh = 1
+      fix_sig = 1
+
       ! Phase matrix coefficients
       IF (AerosolScatter_AD%n_Phase_Elements > 0 .and. AerosolScatter_AD%Include_Scattering ) THEN
          DO m = 1, AerosolScatter_AD%n_Phase_Elements
          DO l = 1, AerosolScatter_AD%n_Legendre_Terms
-            zg => AeroC%pcoeff( asi%i1:asi%i2, asi%j1:asi%j2, 1, k,l+AerosolScatter_AD%lOffset,m)
-            CALL interp_2D_AD( zg   , asi%wlp, asi%xlp, &  ! FWD Input
-                               pcoeff_AD(l,m)         , &  ! AD  Input
-                               zg_AD, wlp_AD,  xlp_AD    ) ! AD  Output
+            zg => AeroC%pcoeff( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k,l+AerosolScatter_AD%lOffset,m)
+            CALL interp_2D_AD( zg   , asi%wlp, asi%xlp, & ! FWD Input
+                               pcoeff_AD(l,m)         , & ! AD  Input
+                               zg_AD, wlp_AD,  xlp_AD   ) ! AD  Output
          END DO
          END DO
          pcoeff_AD(0,1) = ZERO
@@ -1136,14 +1241,14 @@ CONTAINS
       END IF
 
       ! Single scatter albedo
-      zg => AeroC%w( asi%i1:asi%i2, asi%j1:asi%j2, 1, k)
+      zg => AeroC%w( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k)
       CALL interp_2D_AD( zg   , asi%wlp, asi%xlp, &  ! FWD Input
-                         w_AD                  , &  ! AD  Input
+                         w_AD                   , &  ! AD  Input
                          zg_AD, wlp_AD , xlp_AD   )  ! AD  Output
       ! Extinction coefficient
-      zg => AeroC%ke( asi%i1:asi%i2, asi%j1:asi%j2, 1, k)
+      zg => AeroC%ke( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, fix_sig, k)
       CALL interp_2D_AD( zg   , asi%wlp, asi%xlp, &  ! FWD Input
-                         ke_AD                 , &  ! AD  Input
+                         ke_AD                  , &  ! AD  Input
                          zg_AD, wlp_AD , xlp_AD   )  ! AD  Output
       NULLIFY(zg)
 
@@ -1164,16 +1269,18 @@ CONTAINS
       ! --------------
       Reff_AD = Reff_AD + r_int_AD
 
-   ELSE ! AeroC%Scheme == 'CMAQ'
+   ELSE IF ( AeroC%Scheme == 'CMAQ' ) THEN
+      ! Fixed indices
+      fix_rh = 1
 
       ! Phase matrix coefficients
       IF (AerosolScatter_AD%n_Phase_Elements > 0 .and. AerosolScatter_AD%Include_Scattering ) THEN
          DO m = 1, AerosolScatter_AD%n_Phase_Elements
          DO l = 1, AerosolScatter_AD%n_Legendre_Terms
-            zc => AeroC%pcoeff( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k,l+AerosolScatter_AD%lOffset,m)
-            CALL interp_3D_AD( zc   , asi%wlp, asi%xlp, asi%vlp ,&  ! FWD Input
-                               pcoeff_AD(l,m)                   ,&  ! AD  Input
-                               zc_AD, wlp_AD,  xlp_AD,  vlp_AD  )   ! AD  Output
+            zc => AeroC%pcoeff( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k,l+AerosolScatter_AD%lOffset,m)
+            CALL interp_3D_AD( zc   , asi%wlp, asi%xlp, asi%vlp, &  ! FWD Input
+                               pcoeff_AD(l,m)                  , &  ! AD  Input
+                               zc_AD, wlp_AD,  xlp_AD,  vlp_AD   )  ! AD  Output
          END DO
          END DO
          pcoeff_AD(0,1) = ZERO
@@ -1188,13 +1295,13 @@ CONTAINS
       END IF
 
       ! Single scatter albedo
-      zc => AeroC%w( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k)
-      CALL interp_3D_AD( zc   , asi%wlp, asi%xlp, asi%vlp , &  ! FWD Input
-                         w_AD                             , &  ! AD  Input
-                         zc_AD, wlp_AD , xlp_AD,  vlp_AD )     ! AD  Output
+      zc => AeroC%w( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k)
+      CALL interp_3D_AD( zc   , asi%wlp, asi%xlp, asi%vlp, &  ! FWD Input
+                         w_AD                            , &  ! AD  Input
+                         zc_AD, wlp_AD , xlp_AD,  vlp_AD   )  ! AD  Output
 
       ! Extinction coefficient
-      zc => AeroC%ke( asi%i1:asi%i2, asi%j1:asi%j2, asi%k1:asi%k2, k)
+      zc => AeroC%ke( asi%i1:asi%i2, fix_rh, asi%j1:asi%j2, asi%k1:asi%k2, k)
       CALL interp_3D_AD( zc   , asi%wlp, asi%xlp, asi%vlp, &  ! FWD Input
                          ke_AD                           , &  ! AD  Input
                          zc_AD, wlp_AD,  xlp_AD,  vlp_AD   )  ! AD  Output
@@ -1223,7 +1330,62 @@ CONTAINS
       Rsig_AD = Rsig_AD + v_int_AD
       Reff_AD = Reff_AD + r_int_AD
 
-   END IF !IF ( AeroC%Scheme == 'GOCART' ) THEN
+   ELSE IF ( AeroC%Scheme == 'GOCART-GEOS5' .OR. AeroC%Scheme == 'NAAPS' ) THEN
+     ! Fixed indices
+     fix_sig = 1
+     fix_r   = 1
+
+     ! Phase matrix coefficients
+     IF (AerosolScatter_AD%n_Phase_Elements > 0 .and. AerosolScatter_AD%Include_Scattering ) THEN
+        DO m = 1, AerosolScatter_AD%n_Phase_Elements
+        DO l = 1, AerosolScatter_AD%n_Legendre_Terms
+           zg => AeroC%pcoeff( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k,l+AerosolScatter_AD%lOffset,m)
+           CALL interp_2D_AD( zg   , asi%wlp, asi%hlp, &  ! FWD Input
+                              pcoeff_AD(l,m)         , &  ! AD  Input
+                              zg_AD, wlp_AD,  hlp_AD   )  ! AD  Output
+        END DO
+        END DO
+        pcoeff_AD(0,1) = ZERO
+     ELSE
+        ! Absorption coefficient
+        IF( w < ONE ) THEN
+           w_AD  = w_AD - ke/(ONE -w) * ke_AD
+           ke_AD = ke_AD * (ONE - w)
+        ELSE
+           ke_AD = ZERO
+        END IF
+     END IF
+
+     ! Single scatter albedo
+     zg => AeroC%w( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k)
+     CALL interp_2D_AD( zg   , asi%wlp, asi%hlp, &  ! FWD Input
+                        w_AD                   , &  ! AD  Input
+                        zg_AD, wlp_AD , hlp_AD   )  ! AD  Output
+
+     ! Extinction coefficient
+     zg => AeroC%ke( asi%i1:asi%i2, asi%h1:asi%h2, fix_r, fix_sig, k)
+     CALL interp_2D_AD( zg   , asi%wlp, asi%hlp, &  ! FWD Input
+                        ke_AD                  , &  ! AD  Input
+                        zg_AD, wlp_AD,  hlp_AD   )  ! AD  Output
+     NULLIFY(zg)
+
+     ! Compute the AD of the interpolating polynomials
+     ! -----------------------------------------------
+     ! Frequency term (always zero. This is a placeholder for testing)
+     CALL LPoly_AD( asi%f, asi%f_int, & ! FWD Input
+                    asi%wlp,          & ! FWD Input
+                    wlp_AD,           & ! AD  Input
+                    f_AD, f_int_AD    ) ! AD  Output
+     ! Relative humidity term
+     CALL LPoly_AD( asi%h, asi%h_int, & ! FWD Input
+                    asi%hlp,          & ! FWD Input
+                    hlp_AD,           & ! AD  Input
+                    h_AD, h_int_AD    ) ! AD  Output
+
+     ! The AD outputs
+     ! --------------
+     RH_AD   = RH_AD + h_int_AD
+   END IF !IF ( AeroC%Scheme == 'CRTM' ) THEN
 
   END SUBROUTINE Get_Aerosol_Opt_AD
 

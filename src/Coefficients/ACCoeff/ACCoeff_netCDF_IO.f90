@@ -27,8 +27,7 @@ MODULE ACCoeff_netCDF_IO
                              ACCoeff_Create        , &
                              ACCoeff_Inspect       , &
                              ACCoeff_ValidRelease  , &
-                             ACCoeff_Info          , &
-                             ACCoeff_DefineVersion
+                             ACCoeff_Info          
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -43,13 +42,12 @@ MODULE ACCoeff_netCDF_IO
   PUBLIC :: ACCoeff_netCDF_InquireFile
   PUBLIC :: ACCoeff_netCDF_ReadFile
   PUBLIC :: ACCoeff_netCDF_WriteFile
-  PUBLIC :: ACCoeff_netCDF_IOVersion
+  !PUBLIC :: ACCoeff_netCDF_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
@@ -880,10 +878,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE ACCoeff_netCDF_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE ACCoeff_netCDF_IOVersion
+!  SUBROUTINE ACCoeff_netCDF_IOVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    Id = MODULE_VERSION_ID
+!  END SUBROUTINE ACCoeff_netCDF_IOVersion
 
 
 
@@ -941,10 +939,10 @@ CONTAINS
     ! Mandatory global attributes
     ! ...Software ID
     gattname = WRITE_MODULE_HISTORY_GATTNAME
-    nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),MODULE_VERSION_ID )
-    IF ( nf90_status /= NF90_NOERR ) THEN
-      CALL WriteGAtts_Cleanup(); RETURN
-    END IF
+    !nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),MODULE_VERSION_ID )
+    !IF ( nf90_status /= NF90_NOERR ) THEN
+    !  CALL WriteGAtts_Cleanup(); RETURN
+    !END IF
     ! ...Creation date
     CALL DATE_AND_TIME( cdate, ctime, czone )
     gattname = CREATION_DATE_AND_TIME_GATTNAME

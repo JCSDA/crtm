@@ -11,6 +11,12 @@
 !       Modified by     Cheng Dang, 10-Oct-2020;
 !                       dangch@ucar.edu
 !                       Update dimensions to accomdate CMAQ aerosol Coefficient
+!       Modified by     Cheng Dang, 20-Nov-2020;
+!                       dangch@ucar.edu
+!                       Update dimensions to accomdate GOCART-GEOS5 aerosol coefficient
+!       Modified by     Cheng Dang, 30-Mar-2022
+!                       dangch@ucar.edu
+!                       Add dimension n_RH_Radii
 
 MODULE AerosolCoeff_netCDF_IO
 
@@ -19,7 +25,7 @@ MODULE AerosolCoeff_netCDF_IO
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds         , ONLY: Double, Long
+  USE Type_Kinds         , ONLY: Double, Long, fp
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE File_Utility       , ONLY: File_Exists
   USE String_Utility     , ONLY: StrClean
@@ -55,7 +61,7 @@ MODULE AerosolCoeff_netCDF_IO
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
-  REAL(Double), PARAMETER :: ZERO = 0.0_Double
+  REAL(Double), PARAMETER :: FILL_FLOAT = -999.0_fp
 
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: RELEASE_GATTNAME     = 'Release'
@@ -71,6 +77,7 @@ MODULE AerosolCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: RSIG_DIMNAME       = 'n_Sigma'
   CHARACTER(*), PARAMETER :: TYPE_DIMNAME       = 'n_Types'
   CHARACTER(*), PARAMETER :: RH_DIMNAME         = 'n_RH'
+  CHARACTER(*), PARAMETER :: RHRADII_DIMNAME    = 'n_RH_Radii' !Only used for RH in CMAQ and CRTM LUTs
   CHARACTER(*), PARAMETER :: LEGENDRE_DIMNAME   = 'n_Legendre_Terms'
   CHARACTER(*), PARAMETER :: PHASE_DIMNAME      = 'n_Phase_Elements'
   CHARACTER(*), PARAMETER :: TNSL_DIMNAME       = 'tnsl'
@@ -114,7 +121,6 @@ MODULE AerosolCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: G_DESCRIPTION          = 'Asymmetry parameter for aerosol scatterers'
   CHARACTER(*), PARAMETER :: PCOEFF_DESCRIPTION     = 'Phase coefficients for aerosol scatterers'
 
-
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
   CHARACTER(*), PARAMETER :: TYPE_UNITS       = 'N/A'
@@ -128,21 +134,19 @@ MODULE AerosolCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: G_UNITS          = 'N/A'
   CHARACTER(*), PARAMETER :: PCOEFF_UNITS     = 'N/A'
 
-
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
 
   INTEGER(Long), PARAMETER :: TYPE_FILLVALUE       = 0
   CHARACTER(*) , PARAMETER :: TYPE_NAME_FILLVALUE  = NF90_FILL_CHAR
-  REAL(Double) , PARAMETER :: WAVELENGTH_FILLVALUE = ZERO
-  REAL(Double) , PARAMETER :: REFF_FILLVALUE       = ZERO
-  REAL(Double) , PARAMETER :: RSIG_FILLVALUE       = ZERO
-  REAL(Double) , PARAMETER :: RH_FILLVALUE         = ZERO
-  REAL(Double) , PARAMETER :: KE_FILLVALUE         = ZERO
-  REAL(Double) , PARAMETER :: W_FILLVALUE          = ZERO
-  REAL(Double) , PARAMETER :: G_FILLVALUE          = ZERO
-  REAL(Double) , PARAMETER :: PCOEFF_FILLVALUE     = ZERO
-
+  REAL(Double) , PARAMETER :: WAVELENGTH_FILLVALUE = FILL_FLOAT
+  REAL(Double) , PARAMETER :: REFF_FILLVALUE       = FILL_FLOAT
+  REAL(Double) , PARAMETER :: RSIG_FILLVALUE       = FILL_FLOAT
+  REAL(Double) , PARAMETER :: RH_FILLVALUE         = FILL_FLOAT
+  REAL(Double) , PARAMETER :: KE_FILLVALUE         = FILL_FLOAT
+  REAL(Double) , PARAMETER :: W_FILLVALUE          = FILL_FLOAT
+  REAL(Double) , PARAMETER :: G_FILLVALUE          = FILL_FLOAT
+  REAL(Double) , PARAMETER :: PCOEFF_FILLVALUE     = FILL_FLOAT
 
   ! Variable types
   INTEGER, PARAMETER :: TYPE_TYPE       = NF90_INT
@@ -187,6 +191,7 @@ CONTAINS
 !                        n_Sigma          = n_Sigma         , &
 !                        n_Types          = n_Types         , &
 !                        n_RH             = n_RH            , &
+!                        n_RH_Radii       = n_RH_Radii      , &
 !                        n_Legendre_Terms = n_Legendre_Terms, &
 !                        n_Phase_Elements = n_Phase_Elements, &
 !                        Release          = Release         , &
@@ -245,6 +250,13 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
+!
+!       n_RH_Radii:        The number of relative humidity entries in
+!                          the CRTM and CMAQ tables. Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       n_Legendre_Terms:   The maximum number of Legendre polynomial
 !                           terms in the LUT. Can be = 0.
@@ -314,6 +326,7 @@ CONTAINS
     n_Sigma         , &  ! Optional output
     n_Types         , &  ! Optional output
     n_RH            , &  ! Optional output
+    n_RH_Radii      , &  ! Optional output
     n_Legendre_Terms, &  ! Optional output
     n_Phase_Elements, &  ! Optional output
     Release         , &  ! Optional output
@@ -331,6 +344,7 @@ CONTAINS
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH_Radii
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements
     INTEGER,      OPTIONAL, INTENT(OUT) :: Release
@@ -433,6 +447,22 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
+    ! ...n_RH_Radii dimension
+    AerosolCoeff%n_RH_Radii = 1 ! dummy variable if not CRTM nor CMAQ tables
+    IF (Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ' ) THEN
+      NF90_Status = NF90_INQ_DIMID( FileId,RHRADII_DIMNAME,DimId )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring dimension ID for '//RHRADII_DIMNAME//' - '// &
+              TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Inquire_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=AerosolCoeff%n_RH_Radii )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error reading dimension value for '//RHRADII_DIMNAME//' - '// &
+              TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Inquire_Cleanup(); RETURN
+      END IF
+    END IF
     ! ...n_Legendre_Terms dimension
     NF90_Status = NF90_INQ_DIMID( FileId,LEGENDRE_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -488,6 +518,7 @@ CONTAINS
     IF ( PRESENT(n_Sigma         ) ) n_Sigma          = AerosolCoeff%n_Sigma
     IF ( PRESENT(n_Types         ) ) n_Types          = AerosolCoeff%n_Types
     IF ( PRESENT(n_RH            ) ) n_RH             = AerosolCoeff%n_RH
+    IF ( PRESENT(n_RH_Radii      ) ) n_RH_Radii       = AerosolCoeff%n_RH_Radii
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = AerosolCoeff%n_Legendre_Terms-1  ! Indexed from 0, so subtract 1.
     IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = AerosolCoeff%n_Phase_Elements
     IF ( PRESENT(Release         ) ) Release          = AerosolCoeff%Release
@@ -595,12 +626,12 @@ CONTAINS
 
   FUNCTION AerosolCoeff_netCDF_WriteFile( &
     Aerosol_Model, &  ! Input
-    Filename    , &  ! Input
-    AerosolCoeff, &  ! Input
-    Quiet       , &  ! Optional input
-    Title       , &  ! Optional input
-    History     , &  ! Optional input
-    Comment     ) &  ! Optional input
+    Filename     , &  ! Input
+    AerosolCoeff , &  ! Input
+    Quiet        , &  ! Optional input
+    Title        , &  ! Optional input
+    History      , &  ! Optional input
+    Comment      ) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),            INTENT(IN) :: Aerosol_Model
@@ -643,11 +674,13 @@ CONTAINS
     ! Create the output file
     err_stat = CreateFile( &
                  Filename                              , &  ! Input
+                 AerosolCoeff%Scheme                   , &  ! Input
                  AerosolCoeff%n_Wavelengths            , &  ! Input
                  AerosolCoeff%n_Radii                  , &  ! Input
                  AerosolCoeff%n_Sigma                  , &  ! Input
                  AerosolCoeff%n_Types                  , &  ! Input
                  AerosolCoeff%n_RH                     , &  ! Input
+                 AerosolCoeff%n_RH_Radii               , &  ! Input
                  AerosolCoeff%n_Legendre_Terms         , &  ! Input
                  AerosolCoeff%n_Phase_Elements         , &  ! Input
                  FileId                                , &  ! Output
@@ -947,6 +980,7 @@ CONTAINS
     INTEGER :: n_Sigma
     INTEGER :: n_Types
     INTEGER :: n_RH
+    INTEGER :: n_RH_Radii
     INTEGER :: n_Legendre_Terms
     INTEGER :: n_Phase_Elements
     INTEGER :: VarId
@@ -973,6 +1007,7 @@ CONTAINS
                  n_Sigma          = n_Sigma      , &
                  n_Types          = n_Types      , &
                  n_RH             = n_RH         , &
+                 n_RH_Radii       = n_RH_Radii   , &
                  n_Legendre_Terms = n_Legendre_Terms, &
                  n_Phase_Elements = n_Phase_Elements  )
     IF ( err_stat /= SUCCESS ) THEN
@@ -983,11 +1018,13 @@ CONTAINS
     ! Allocate the output structure
     CALL AerosolCoeff_Create( &
            AerosolCoeff    , &
+           Aerosol_Model   , &
            n_Wavelengths   , &
            n_Radii         , &
            n_Sigma         , &
            n_Types         , &
            n_RH            , &
+           n_RH_Radii      , &
            n_Legendre_Terms, &
            n_Phase_Elements  )
     IF ( .NOT. AerosolCoeff_Associated(AerosolCoeff) ) THEN
@@ -1080,7 +1117,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Rsig variable 
+    ! ...Rsig variable
     NF90_Status = NF90_INQ_VARID( FileId,RSIG_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
@@ -1433,11 +1470,13 @@ CONTAINS
 
   FUNCTION CreateFile( &
     Filename        , &  ! Input
+    Aerosol_Model   , &  ! Input
     n_Wavelengths   , &  ! Input
     n_Radii         , &  ! Input
     n_Sigma         , &  ! Input
     n_Types         , &  ! Input
     n_RH            , &  ! Input
+    n_RH_Radii      , &  ! Input
     n_Legendre_Terms, &  ! Input
     n_Phase_Elements, &  ! Input
     FileId          , &  ! Output
@@ -1449,11 +1488,13 @@ CONTAINS
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
+    CHARACTER(*),           INTENT(IN)  :: Aerosol_Model
     INTEGER     ,           INTENT(IN)  :: n_Wavelengths
     INTEGER     ,           INTENT(IN)  :: n_Radii
     INTEGER     ,           INTENT(IN)  :: n_Sigma
     INTEGER     ,           INTENT(IN)  :: n_Types
     INTEGER     ,           INTENT(IN)  :: n_RH
+    INTEGER     ,           INTENT(IN)  :: n_RH_Radii
     INTEGER     ,           INTENT(IN)  :: n_Legendre_Terms
     INTEGER     ,           INTENT(IN)  :: n_Phase_Elements
     INTEGER     ,           INTENT(OUT) :: FileId
@@ -1475,11 +1516,13 @@ CONTAINS
     INTEGER :: n_Sigma_DimID
     INTEGER :: n_Types_DimID
     INTEGER :: n_RH_DimID
+    INTEGER :: n_RH_Radii_DimID
     INTEGER :: n_Legendre_Terms_DimID
     INTEGER :: n_Phase_Elements_DimID
     INTEGER :: tnsl_DimID
     INTEGER :: varID
     INTEGER :: Put_Status(4)
+    INTEGER :: n_RH_out
     TYPE(AerosolCoeff_type) :: dummy
 
     ! Setup
@@ -1533,6 +1576,15 @@ CONTAINS
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
+    IF ( Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ' ) THEN
+      NF90_Status = NF90_DEF_DIM( FileID,RHRADII_DIMNAME,n_RH_Radii,n_RH_Radii_DimID )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error defining '//RH_DIMNAME//' dimension in '//&
+              TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Create_Cleanup(); RETURN
+      END IF
+    END IF
+
     ! ...Number of Legendre terms
     ! ...Array indexing starts at 0, so +1
     NF90_Status = NF90_DEF_DIM( FileID,LEGENDRE_DIMNAME,n_Legendre_Terms+1,n_Legendre_Terms_DimID )
@@ -1549,7 +1601,7 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...Type_Name string length
-    CALL AerosolCoeff_Create(dummy,0,0,0,1,0,0,0) ! Only n_Types dimension non-zero
+    CALL AerosolCoeff_Create(dummy,Aerosol_Model,0,0,0,1,0,0,0,0) ! Only n_Types dimension non-zero
     NF90_Status = NF90_DEF_DIM( FileID,TNSL_DIMNAME,LEN(dummy%Type_Name(1)),tnsl_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//TNSL_DIMNAME//' dimension in '//&
@@ -1670,10 +1722,16 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...RH variable
+    IF (Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ') THEN
+      ! 36 RH values used for effective radii calculation
+      n_RH_out = n_RH_Radii_DimID
+    ELSE
+      n_RH_out = n_RH_DimID
+    END IF
     NF90_Status = NF90_DEF_VAR( FileID, &
       RH_VARNAME, &
       RH_TYPE, &
-      dimIDs=(/n_RH_DimID/), &
+      dimIDs=(/n_RH_out/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//RH_VARNAME//' variable in '//&
@@ -1692,7 +1750,8 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       KE_VARNAME, &
       KE_TYPE, &
-      dimIDs=(/n_Wavelengths_DimID, n_Radii_DimID, n_Types_DimID/), &
+      dimIDs=(/n_Wavelengths_DimID, n_RH_DimID, &
+               n_Radii_DimID, n_Sigma_DimID, n_Types_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//KE_VARNAME//' variable in '//&
@@ -1711,7 +1770,8 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       W_VARNAME, &
       W_TYPE, &
-      dimIDs=(/n_Wavelengths_DimID, n_Radii_DimID, n_Types_DimID/), &
+      dimIDs=(/n_Wavelengths_DimID, n_RH_DimID, &
+               n_Radii_DimID, n_Sigma_DimID, n_Types_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//W_VARNAME//' variable in '//&
@@ -1730,7 +1790,8 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       G_VARNAME, &
       G_TYPE, &
-      dimIDs=(/n_Wavelengths_DimID, n_Radii_DimID, n_Types_DimID/), &
+      dimIDs=(/n_Wavelengths_DimID, n_RH_DimID, &
+               n_Radii_DimID, n_Sigma_DimID, n_Types_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//G_VARNAME//' variable in '//&
@@ -1749,7 +1810,8 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       PCOEFF_VARNAME, &
       PCOEFF_TYPE, &
-      dimIDs=(/n_Wavelengths_DimID, n_Radii_DimID, n_Types_DimID, &
+      dimIDs=(/n_Wavelengths_DimID, n_RH_DimID, &
+               n_Radii_DimID, n_Sigma_DimID, n_Types_DimID, &
                n_Legendre_Terms_DimID, n_Phase_Elements_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN

@@ -9,9 +9,42 @@
 !       correctly such that it can be linked to create
 !       an executable.
 !
-!
 
-PROGRAM check_crtm_full
+! Aerosol-Index mapping:
+!  --- CRTM ---
+!  1 = Dust
+!  2 = Sea salt-SSAM
+!  3 = Sea salt-SSCM1
+!  4 = Sea salt-SSCM2
+!  5 = Sea salt-SSCM3
+!  6 = Organic carbon
+!  7 = Black carbon
+!  8 = Sulfate
+!  --- CMAQ ---
+!  1 = Dust
+!  2 = Soot
+!  3 = Water soluble
+!  4 = Sulfate
+!  5 = Sea salt
+!  6 = Water
+!  7 = Insoluble
+!  8 = dust-like
+!  --- GOCART-GEOS5 ---
+!  1 = Dust
+!  2 = Sea salt
+!  3 = Organic carbon hydrophobic
+!  4 = Organic carbon hydrophilic
+!  5 = Black carbon hydrophobic
+!  6 = Black carbon hydrophilic
+!  7 = Sulfate
+!  8 = Nitrate
+!  --- NAAPS ---
+!  1 = Dust
+!  2 = Smoke
+!  3 = Sea Salt
+!  4 = Anthropogenic and Biogenic Fine Particles
+
+PROGRAM check_crtm
 
   ! ============================================================================
   ! STEP 1. **** ENVIRONMENT SETUP FOR CRTM USAGE ****
@@ -29,17 +62,28 @@ PROGRAM check_crtm_full
   ! --------------------------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'check_crtm'
 
-
   ! ============================================================================
   ! STEP 2. **** SET UP SOME PARAMETERS FOR THE CRTM RUN ****
   !
   ! Directory location of coefficients
-!!$#ifdef LITTLE_ENDIAN
-!!$  CHARACTER(*), PARAMETER :: ENDIAN_TYPE='little_endian'
-!!$#else
-!!$  CHARACTER(*), PARAMETER :: ENDIAN_TYPE='big_endian'
-!!$#endif
+#ifdef LITTLE_ENDIAN
+  CHARACTER(*), PARAMETER :: ENDIAN_TYPE='little_endian'
+#else
+  CHARACTER(*), PARAMETER :: ENDIAN_TYPE='big_endian'
+#endif
   CHARACTER(*), PARAMETER :: COEFFICIENT_PATH='./testinput/'
+  CHARACTER(*), PARAMETER :: NC_COEFFICIENT_PATH='./testinput/'
+
+  ! Aerosol/Cloud coefficient format
+  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
+  !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
+
+  ! Aerosol/Cloud coefficient scheme
+  CHARACTER(*), PARAMETER :: Aerosol_Model = 'CRTM'
+  !CHARACTER(*), PARAMETER :: Aerosol_Model = 'CMAQ'
+  !CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART-GEOS5'
+  !CHARACTER(*), PARAMETER :: Aerosol_Model = 'NAAPS'
+  CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM'
 
   ! Directory location of results for comparison [NOT USED YET]
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/'
@@ -50,11 +94,10 @@ PROGRAM check_crtm_full
   INTEGER, PARAMETER :: N_ABSORBERS = 2
   INTEGER, PARAMETER :: N_CLOUDS    = 1
   INTEGER, PARAMETER :: N_AEROSOLS  = 1
-  
+
   ! Sensor information
-  INTEGER     , PARAMETER :: N_SENSORS = 3
-  CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = (/'v.abi_gr   ', &
-                                                      'cris399_npp', &
+  INTEGER     , PARAMETER :: N_SENSORS = 2
+  CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = (/'cris399_npp', &
                                                       'atms_npp   '/)
 
   ! Some pretend geometry angles. The scan angle is based
@@ -62,19 +105,20 @@ PROGRAM check_crtm_full
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
   REAL(fp), PARAMETER :: SCAN_ANGLE   = 26.37293341421_fp
   ! ============================================================================
-  
-
 
   ! ---------
   ! Variables
   ! ---------
   CHARACTER(256) :: message, version
+  CHARACTER(256) :: AerosolCoeff_File
+  CHARACTER(256) :: AerosolCoeff_Format
+  CHARACTER(256) :: CloudCoeff_File
+  CHARACTER(256) :: CloudCoeff_Format
+  CHARACTER(256) :: Aerosol_Scheme
+  CHARACTER(256) :: Cloud_Scheme
   INTEGER :: err_stat, alloc_stat
   INTEGER :: n_channels
   INTEGER :: l, m, n, nc
-
-
-
   ! ============================================================================
   ! STEP 3. **** DEFINE THE CRTM INTERFACE STRUCTURES ****
   !
@@ -89,8 +133,7 @@ PROGRAM check_crtm_full
   TYPE(CRTM_Atmosphere_type)              :: atm(N_PROFILES)
   TYPE(CRTM_Surface_type)                 :: sfc(N_PROFILES)
   TYPE(CRTM_RTSolution_type), ALLOCATABLE :: rts(:,:)
-  
-  
+
   ! 3c. Define the K-MATRIX variables
   ! ---------------------------------
   TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: atm_K(:,:)
@@ -103,7 +146,8 @@ PROGRAM check_crtm_full
   ! --------------
   CALL CRTM_Version( Version )
   CALL Program_Message( PROGRAM_NAME, &
-    'Check/example program for the CRTM Forward and K-Matrix functions.', &
+    'Check/example program for the CRTM Forward and K-Matrix functions using '//&
+    ENDIAN_TYPE//' coefficient datafiles', &
     'CRTM Version: '//TRIM(Version) )
 
 
@@ -113,10 +157,42 @@ PROGRAM check_crtm_full
   !
   ! 4a. Initialise all the sensors at once
   ! --------------------------------------
+  ! ... Cloud coefficient information
+  IF ( Cloud_Model /= 'CRTM' ) THEN
+      Cloud_Scheme = Cloud_Model//'.'
+  ELSE
+      Cloud_Scheme = ' '
+  END IF
+  ! ... Aerosol coefficient information
+  IF ( Aerosol_Model /= 'CRTM' ) THEN
+      Aerosol_Scheme = Aerosol_Model//'.'
+  ELSE
+      Aerosol_Scheme = ' '
+  END IF
+  ! ... Coefficient table format
+  IF ( Coeff_Format == 'Binary' ) THEN
+    AerosolCoeff_Format = 'Binary'
+    AerosolCoeff_File   = 'AerosolCoeff.'//TRIM(Aerosol_Scheme)//'bin'
+    CloudCoeff_Format   = 'Binary'
+    CloudCoeff_File     = 'CloudCoeff.'//TRIM(Cloud_Scheme)//'bin'
+  ELSE IF ( Coeff_Format == 'netCDF' ) THEN
+    AerosolCoeff_Format = 'netCDF'
+    AerosolCoeff_File   = 'AerosolCoeff.'//TRIM(Aerosol_Scheme)//'nc4'
+    CloudCoeff_Format   = 'netCDF'
+    CloudCoeff_File     = 'CloudCoeff.'//TRIM(Cloud_Scheme)//'nc4'
+  END IF
+
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   err_stat = CRTM_Init( SENSOR_ID, &
                         chinfo, &
+                        Aerosol_Model, &
+                        AerosolCoeff_Format, &
+                        AerosolCoeff_File, &
+                        Cloud_Model, &
+                        CloudCoeff_Format, &
+                        CloudCoeff_File, &
                         File_Path=COEFFICIENT_PATH, &
+                        NC_File_Path=NC_COEFFICIENT_PATH, &
                         Quiet=.TRUE.)
   IF ( err_stat /= SUCCESS ) THEN
     message = 'Error initializing CRTM'
@@ -140,7 +216,6 @@ PROGRAM check_crtm_full
   ! ----------------------
   Sensor_Loop: DO n = 1, N_SENSORS
 
-  
     ! ==========================================================================
     ! STEP 5. **** ALLOCATE STRUCTURE ARRAYS ****
     !
@@ -149,7 +224,6 @@ PROGRAM check_crtm_full
     ! ------------------------------------
     n_channels = CRTM_ChannelInfo_n_Channels(chinfo(n))
 
-    
     ! 5b. Allocate the ARRAYS
     ! -----------------------
     ALLOCATE( rts( n_channels, N_PROFILES ), &
@@ -184,9 +258,6 @@ PROGRAM check_crtm_full
       STOP
     END IF
     ! ==========================================================================
-  
-  
-  
 
     ! ==========================================================================
     ! STEP 6. **** ASSIGN INPUT DATA ****
@@ -206,7 +277,6 @@ PROGRAM check_crtm_full
     END DO
 
     ! The true fractional cloud fraction cases
-    !JR Intel 18 doesn't like atm(3:4) = atm(1:2) so recode w/o array syntax:
     atm(3) = atm(1)
     atm(4) = atm(2)
     sfc(3) = sfc(1)
@@ -245,14 +315,11 @@ PROGRAM check_crtm_full
     rts_K%Brightness_Temperature = ONE
     ! ==========================================================================
 
-
-
-    
     ! ==========================================================================
     ! STEP 8. **** CALL THE CRTM FUNCTIONS FOR THE CURRENT SENSOR ****
     !
     WRITE( *, '( /5x, "Calling the CRTM functions for ",a,"..." )' ) TRIM(SENSOR_ID(n))
-    
+
     ! 8a. The forward model
     ! ---------------------
     err_stat = CRTM_Forward( atm        , &  ! Input
@@ -265,17 +332,8 @@ PROGRAM check_crtm_full
       CALL Display_Message( PROGRAM_NAME, message, FAILURE )
       STOP
     END IF
-    
-   write( *,*) 'check_crtm Forward: Results for rts:'
-   DO m = 1, N_PROFILES
-     WRITE( *,'(//7x,"Profile ",i0," output for ",a )') m, TRIM(Sensor_Id(n))
-     DO l = 1, n_Channels
-       WRITE( *, '(/5x,"Channel ",i0," results")') chinfo(n)%Sensor_Channel(l)
-       CALL CRTM_RTSolution_Inspect(rts(l,m))
-     END DO
-   END DO
 
-    
+
     ! 8b. The K-matrix model
     ! ----------------------
     err_stat = CRTM_K_Matrix( atm        , &  ! FORWARD  Input
@@ -300,15 +358,18 @@ PROGRAM check_crtm_full
    ! CRTM_RTSolution_Inspect in the file CRTM_RTSolution_Define.f90 to
    ! select the needed variables for outputs.  These variables are contained
    ! in the structure RTSolution.
-   write( *,*) 'check_crtm K_Matrix: Results for rts_K:'
    DO m = 1, N_PROFILES
      WRITE( *,'(//7x,"Profile ",i0," output for ",a )') m, TRIM(Sensor_Id(n))
      DO l = 1, n_Channels
-       WRITE( *, '(/5x,"Channel ",i0," rts_K results")') chinfo(n)%Sensor_Channel(l)
-       CALL CRTM_RTSolution_Inspect( rts_K(l,m) )
-       CALL CRTM_Atmosphere_Inspect( atm_K(l,m) )
-       CALL CRTM_Surface_Inspect(    sfc_K(l,m) )
+       WRITE( *, '(/5x,"Channel ",i0," results")') chinfo(n)%Sensor_Channel(l)
+       CALL CRTM_RTSolution_Inspect(rts(l,m))
+       CALL CRTM_RTSolution_Inspect(rts_K(l,m))
+       CALL CRTM_Atmosphere_Inspect(atm_K(l,m))
+       CALL CRTM_Surface_Inspect(sfc_K(l,m))
+
      END DO
+     CALL CRTM_Atmosphere_Inspect(atm(m))
+     CALL CRTM_Surface_Inspect(sfc(m))
    END DO
 
 
@@ -329,8 +390,6 @@ PROGRAM check_crtm_full
   END DO Sensor_Loop
 
 
-  
-  
   ! ==========================================================================
   ! 10. **** DESTROY THE CRTM ****
   !
@@ -344,16 +403,16 @@ PROGRAM check_crtm_full
   ! ==========================================================================
 
 
-  
-  
+
+
   ! ==========================================================================
   ! 11. **** CREATE A SIGNAL FILE FOR TESTING SUCCESS ****
   !
-  ! This step is just to allow the CRTM library build process 
+  ! This step is just to allow the CRTM library build process
   ! to detect success or failure at the shell level
   CALL SignalFile_Create()
   ! ==========================================================================
-  
+
 
 CONTAINS
 
@@ -421,6 +480,20 @@ CONTAINS
       259.358_fp, 261.010_fp, 262.779_fp, 264.702_fp, 266.711_fp, 268.863_fp, 271.103_fp, 272.793_fp, &
       273.356_fp, 273.356_fp, 273.356_fp, 273.356_fp/)
 
+    atm(1)%Relative_Humidity = &
+    (/0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp/)
+
     atm(1)%Absorber(:,1) = &
     (/4.187E-03_fp,4.401E-03_fp,4.250E-03_fp,3.688E-03_fp,3.516E-03_fp,3.739E-03_fp,3.694E-03_fp,3.449E-03_fp, &
       3.228E-03_fp,3.212E-03_fp,3.245E-03_fp,3.067E-03_fp,2.886E-03_fp,2.796E-03_fp,2.704E-03_fp,2.617E-03_fp, &
@@ -469,12 +542,11 @@ CONTAINS
       END DO
     END IF
 
-    
     ! Aerosol data. Three aerosol types can be loaded:
     !   Dust, Sulphate, and Sea Salt SSCM3
     Load_Aerosol_Data_1: IF ( atm(1)%n_Aerosols > 0 ) THEN
 
-      atm(1)%Aerosol(1)%Type = DUST_AEROSOL
+      atm(1)%Aerosol(1)%Type = 1 ! dust (CRTM, CMAQ, GOCART-GEOS5)
       atm(1)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &
         0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -515,9 +587,31 @@ CONTAINS
         1.955759E-03_fp, 1.999206E-03_fp, 1.994698E-03_fp, 1.913109E-03_fp, 1.656122E-03_fp, &
         1.206328E-03_fp, 6.847261E-04_fp, 2.785695E-04_fp, 7.418821E-05_fp, 1.172680E-05_fp, &
         9.900895E-07_fp, 3.987399E-08_fp, 6.786932E-10_fp, 4.291151E-12_fp, 8.785440E-15_fp/)
-        
+      IF ( Aerosol_Model== 'CMAQ' ) THEN
+        atm(1)%Aerosol(1)%Effective_Variance = & ! N/A
+        (/1.0500000E+00_fp, 1.500000E+00_fp, &
+          1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, &
+          1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+          1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, &
+          1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, &
+          1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+          1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, &
+          1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, &
+          1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, &
+          1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, &
+          2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, &
+          2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, &
+          2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, &
+          2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, &
+          2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, &
+          2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, &
+          1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+          1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+          1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp/)
+      END IF
+
       IF ( atm(1)%n_Aerosols > 1 ) THEN
-        atm(1)%Aerosol(2)%Type = SULFATE_AEROSOL
+        atm(1)%Aerosol(2)%Type = 8 ! sulfate (CRTM), dust-like (CMAQ), Nitrate (GOCART-GEOS5)
         atm(1)%Aerosol(2)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -558,10 +652,34 @@ CONTAINS
           1.615474E-05_fp, 9.509965E-06_fp, 1.672265E-05_fp, 4.602962E-05_fp, 8.740809E-05_fp, &
           1.165118E-04_fp, 1.248318E-04_fp, 1.240508E-04_fp, 1.095622E-04_fp, 7.116027E-05_fp, &
           2.756351E-05_fp, 5.072010E-06_fp, 3.467497E-07_fp, 6.759169E-09_fp, 2.828000E-11_fp/)
+          IF ( Aerosol_Model== 'CMAQ' ) THEN
+            atm(1)%Aerosol(2)%Effective_Variance = & ! N/A
+            (/1.050000E+00_fp, 1.500000E+00_fp, &
+              1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, &
+              1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+              1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, &
+              1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, &
+              1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+              1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, &
+              1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, &
+              1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, &
+              1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, &
+              2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, &
+              2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, &
+              2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, &
+              2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, &
+              2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, &
+              2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, &
+              1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+              1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+              1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp/)
+          END IF
       END IF
-      
+
+
       IF ( atm(1)%n_Aerosols > 2 ) THEN
-        atm(1)%Aerosol(3)%Type = SEASALT_SSCM3_AEROSOL
+
+        atm(1)%Aerosol(3)%Type = 5 ! SEASALT_SSCM3_AEROSOL (CRTM), Sea salt (CMAQ), Black carbon (GOCART-GEOS5)
         atm(1)%Aerosol(3)%Effective_Radius = & ! microns
         (/7.600000E+00_fp, 7.600000E+00_fp, &
           7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, &
@@ -602,6 +720,28 @@ CONTAINS
           2.735688E-04_fp, 3.486493E-04_fp, 3.889143E-04_fp, 3.997242E-04_fp, 3.991008E-04_fp, &
           3.826235E-04_fp, 3.287943E-04_fp, 2.344766E-04_fp, 1.275907E-04_fp, 4.835821E-05_fp, &
           1.156687E-05_fp, 1.570009E-06_fp, 1.078885E-07_fp, 3.321985E-09_fp, 4.023206E-11_fp/)
+          IF ( Aerosol_Model== 'CMAQ' ) THEN
+            atm(1)%Aerosol(3)%Effective_Variance = & ! N/A
+            (/1.050000E+00_fp, 1.500000E+00_fp, &
+              1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, &
+              1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+              1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, &
+              1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, &
+              1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+              1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, &
+              1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, &
+              1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, &
+              1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, &
+              2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, &
+              2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, &
+              2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, &
+              2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, &
+              2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, &
+              2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, &
+              1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+              1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+              1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp/)
+          END IF
       END IF
     END IF Load_Aerosol_Data_1
 
@@ -656,6 +796,20 @@ CONTAINS
       295.609_fp, 298.173_fp, 300.787_fp, 303.379_fp, 305.960_fp, 308.521_fp, 310.916_fp, 313.647_fp, &
       315.244_fp, 315.244_fp, 315.244_fp, 315.244_fp/)
 
+    atm(2)%Relative_Humidity = &
+    (/0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp/)
+
     atm(2)%Absorber(:,1) = &
     (/3.887E-03_fp,3.593E-03_fp,3.055E-03_fp,2.856E-03_fp,2.921E-03_fp,2.555E-03_fp,2.392E-03_fp,2.605E-03_fp, &
       2.573E-03_fp,2.368E-03_fp,2.354E-03_fp,2.333E-03_fp,2.312E-03_fp,2.297E-03_fp,2.287E-03_fp,2.283E-03_fp, &
@@ -704,7 +858,6 @@ CONTAINS
         3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp /)
     END IF
 
-      
     ! Cloud data
     IF ( atm(2)%n_Clouds > 0 ) THEN
       k1 = 73
@@ -713,15 +866,15 @@ CONTAINS
         atm(2)%Cloud(nc)%Type = RAIN_CLOUD
         atm(2)%Cloud(nc)%Effective_Radius(k1:k2) = 1000.0_fp ! microns
         atm(2)%Cloud(nc)%Water_Content(k1:k2)    =    5.0_fp ! kg/m^2
-      END DO 
+      END DO
     END IF
-    
-    
+
+
     ! Aerosol data. Three aerosol types can be loaded:
     !   Sea Sat SSAM, Sea Salt SSCM1, and Sea Salt SSCM2
     Load_Aerosol_Data_2: IF ( atm(2)%n_Aerosols > 0 ) THEN
-    
-      atm(2)%Aerosol(1)%Type = SEASALT_SSAM_AEROSOL
+
+      atm(2)%Aerosol(1)%Type = 2 ! SEASALT_SSAM_AEROSOL (CRTM), Soot (CMAQ), Sea salt (GOCART-GEOS5)
       atm(2)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &
         0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -762,9 +915,31 @@ CONTAINS
         5.939634E-04_fp, 7.091114E-04_fp, 8.104756E-04_fp, 8.911259E-04_fp, 9.478373E-04_fp, &
         9.814733E-04_fp, 9.964914E-04_fp, 9.999501E-04_fp, 9.994838E-04_fp, 9.921395E-04_fp, &
         9.678320E-04_fp, 9.171414E-04_fp, 8.337592E-04_fp, 7.173667E-04_fp, 5.757384E-04_fp/)
-        
+      IF ( Aerosol_Model== 'CMAQ' ) THEN
+        atm(2)%Aerosol(1)%Effective_Variance = & ! N/A
+        (/1.050000E+00_fp, 1.500000E+00_fp, &
+          1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, &
+          1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+          1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, &
+          1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, &
+          1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+          1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, &
+          1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, &
+          1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, &
+          1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, &
+          2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, &
+          2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, &
+          2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, &
+          2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, &
+          2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, &
+          2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, &
+          1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+          1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+          1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp/)
+      END IF
+
       IF ( atm(2)%n_Aerosols > 1 ) THEN
-        atm(2)%Aerosol(2)%Type = SEASALT_SSCM1_AEROSOL
+        atm(2)%Aerosol(2)%Type = 3 ! SEASALT_SSCM1_AEROSOL (CRTM), Water soluble (CMAQ), Organic carbon (GOCART-GEOS5)
         atm(2)%Aerosol(2)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -805,10 +980,32 @@ CONTAINS
           9.116027E-12_fp, 3.241673E-10_fp, 6.673036E-09_fp, 8.162075E-08_fp, 6.123529E-07_fp, &
           2.926244E-06_fp, 9.306878E-06_fp, 2.071874E-05_fp, 3.418072E-05_fp, 4.455191E-05_fp, &
           4.926597E-05_fp, 5.000000E-05_fp, 4.924296E-05_fp, 4.412128E-05_fp, 3.247284E-05_fp/)
+        IF ( Aerosol_Model== 'CMAQ' ) THEN
+          atm(2)%Aerosol(2)%Effective_Variance = & ! N/A
+          (/1.050000E+00_fp, 1.500000E+00_fp, &
+            1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, &
+            1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+            1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, &
+            1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, &
+            1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+            1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, &
+            1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, &
+            1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, &
+            1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, &
+            2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, &
+            2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, &
+            2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, &
+            2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, &
+            2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, &
+            2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, &
+            1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+            1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+            1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp/)
+        END IF
       END IF
-      
+
       IF ( atm(2)%n_Aerosols > 2 ) THEN
-        atm(2)%Aerosol(3)%Type = SEASALT_SSCM2_AEROSOL
+        atm(2)%Aerosol(3)%Type = 4 ! SEASALT_SSCM2_AEROSOL (CRTM), Sulfate (CMAQ), Organic carbon (GOCART-GEOS5)
         atm(2)%Aerosol(3)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -849,18 +1046,40 @@ CONTAINS
           4.103532E-05_fp, 5.229739E-05_fp, 5.833714E-05_fp, 5.995863E-05_fp, 5.986513E-05_fp, &
           5.739352E-05_fp, 4.931915E-05_fp, 3.517150E-05_fp, 1.913860E-05_fp, 7.253731E-06_fp, &
           1.735030E-06_fp, 2.355013E-07_fp, 1.618327E-08_fp, 4.982977E-10_fp, 6.034809E-12_fp/)
+        IF ( Aerosol_Model== 'CMAQ' ) THEN
+          atm(2)%Aerosol(3)%Effective_Variance = & ! N/A
+          (/1.050000E+00_fp, 1.500000E+00_fp, &
+            1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, 1.100000E+00_fp, &
+            1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+            1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, 1.300000E+00_fp, &
+            1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, 1.400000E+00_fp, &
+            1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+            1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, 1.600000E+00_fp, &
+            1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, &
+            1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, 1.800000E+00_fp, &
+            1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, 1.900000E+00_fp, &
+            2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, 2.000000E+00_fp, &
+            2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, 2.100000E+00_fp, &
+            2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, 2.200000E+00_fp, &
+            2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, 2.300000E+00_fp, &
+            2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, 2.400000E+00_fp, &
+            2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, 2.500000E+00_fp, &
+            1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, 1.200000E+00_fp, &
+            1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, 1.500000E+00_fp, &
+            1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp, 1.700000E+00_fp/)
+        END IF
       END IF
     END IF Load_Aerosol_Data_2
 
   END SUBROUTINE Load_Atm_Data
-  
-  
+
+
   !
   ! Internal subprogam to load some test surface data
   !
   SUBROUTINE Load_Sfc_Data()
-    
-    
+
+
     ! 4a.0 Surface type definitions for default SfcOptics definitions
     !      For IR and VIS, this is the NPOESS reflectivities.
     ! ---------------------------------------------------------------
@@ -910,8 +1129,8 @@ CONTAINS
     sfc(2)%Vegetation_Type  = BARE_SOIL_VEGETATION_TYPE
 
   END SUBROUTINE Load_Sfc_Data
-  
-  
+
+
   !
   ! Internal subprogam to create a signal file
   !
@@ -925,4 +1144,4 @@ CONTAINS
     CLOSE( fid )
   END SUBROUTINE SignalFile_Create
 
-END PROGRAM check_crtm_full
+END PROGRAM check_crtm

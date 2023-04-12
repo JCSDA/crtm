@@ -1,20 +1,21 @@
 README_JEDI.md
 
-Created October 23, 2020
-Updated October 27, 2020
-Released October 28, 2020
+CRTM REL-2.4.1
+Released March 31, 2022
+
+
 
 The README.md file contains a lot of general information about this repository and the legacy build system based on autotools.
 
-CRTM REL-2.4.0 JEDI environment build instructions
+CRTM REL-2.4.1 JEDI environment build instructions
 =========================================================
 
 Preamble
 --------
 
-CRTM v2.4.0 release (`REL-2.4.0`)  
+CRTM v2.4.1 release (`REL-2.4.1`)  
 
-This is a fully functional release of CRTM v2.4.0. 
+This is a fully functional release of CRTM v2.4.1.   
 
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  
@@ -22,6 +23,7 @@ Basic requirements:
 (3) A linux, macOS, or unix-style environment.  This has not been tested under any Windows Fortran environments.
 (4) Bash shell is preferred.
 (5) A suitable JCSDA JEDI environment: either HPC enabled, a JEDI container, JEDI-stacks, or at a bare minimum ecbuild from ectools (google it). 
+(6) git and git-lfs > version 2.0 (tested on 2.10).
 
 =========================================================
 
@@ -59,7 +61,8 @@ The CRTM **development** repository directory structure looks like:
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
-  ├── Get_CRTM_Binary_Data.sh  (gets the fix/ directory "manually")
+  ├── Uncompress_Binary_Files.sh  (uncompresses files in the fix/ directory "manually")
+  ├── Get_Binary_Files.sh  (downloads a fix/ tarball, and uncompresses it -- use this one). 
   ├── CMakeLists.txt           (top-level configuration file for ecbuild)
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
@@ -107,14 +110,14 @@ In the above list, the directories highlighted in bold (bold in markdown), are t
 
 JEDI Configuration
 ------------------
-Note By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the `Get_CRTM_Binary_Data.sh` script, see steps below.  
+As of v2.4.1, the "`fix/`" directory is provided by FTP (as of 3/31/22). Use the Get_Binary_Files.sh script, included herein.
 
 **Configuration**
     git clone https://github.com/JCSDA/crtm      (you've probably done this already)  
     cd crtm/
     git fetch
     git pull
-    sh Get_CRTM_Binary_Data.sh
+    sh Get_Binary_Files.sh
 
 **Build Instructions**
 <pre>
@@ -150,8 +153,6 @@ rm -rf *  (make sure you do this in the build/ directory where you ran `ecbuild`
 </pre>
 
 
-
-
 **Additional options**
 You can modify the various compiler flags, etc in the `crtm/cmake/` directory.  There you will find several configuration files based on differen compilers.
 
@@ -166,7 +167,7 @@ Known Issues
 ------------
 
 (1) Any "Transmitance Coefficient" generation codes included in src/ are not functional.  Contact CRTM support above for details.  
-(2) Testing was only done on modern gfortran compilers.  
+(2) Testing was only done on modern gfortran compilers, with limited testing on intel fortran compilers.
 
 Troubleshooting
 ---------------

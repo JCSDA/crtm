@@ -9,6 +9,12 @@
 !       Written by:     Paul van Delst, 18-Mar-2002
 !                       paul.vandelst@noaa.gov
 !
+!       Modified by:     Isaac Moradi, 12-Nov-2021
+!                        Isaac.Moradi@NASA.GOV
+!
+!                        Included changes to determine whether the sensor
+!                        is active or not
+!
 
 MODULE SpcCoeff_Binary_IO
 
@@ -32,6 +38,7 @@ MODULE SpcCoeff_Binary_IO
   USE NLTECoeff_Define   , ONLY: NLTECoeff_Associated
   USE NLTECoeff_Binary_IO, ONLY: NLTECoeff_Binary_ReadFile , &
                                  NLTECoeff_Binary_WriteFile
+  USE SensorInfo_Parameters, ONLY: ACTIVE_SENSOR
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -221,7 +228,13 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
-
+    ! If the Sensor_Type us greater than ACTIVE_SENOR then set the Is_Active_Sensor flag
+    ! and subtract the numebr so that subsequently it can be defined as MW/IR/VIS/UV
+    IF (SpcCoeff%Sensor_Type .GT. ACTIVE_SENSOR) THEN
+       SpcCoeff%Is_Active_Sensor = .TRUE.
+       SpcCoeff%Sensor_Type = SpcCoeff%Sensor_Type - ACTIVE_SENSOR
+    END IF
+    
     ! Close the file
     CLOSE( fid, IOSTAT=io_stat )
     IF ( io_stat /= 0 ) THEN
@@ -396,19 +409,51 @@ CONTAINS
       WRITE( msg,'("Error reading sensor ids. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
+    
+    ! If the Sensor_Type us greater than ACTIVE_SENOR then set the Is_Active_Sensor flag
+    ! and subtract the numebr so that subsequently it can be defined as MW/IR/VIS/UV
+    IF (SpcCoeff%Sensor_Type .GT. ACTIVE_SENSOR) THEN
+       SpcCoeff%Is_Active_Sensor = .TRUE.
+       SpcCoeff%Sensor_Type = SpcCoeff%Sensor_Type - ACTIVE_SENSOR
+    END IF
+    
     ! ...Read the channel data
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      SpcCoeff%Sensor_Channel            , &
-      SpcCoeff%Polarization              , &
-      SpcCoeff%Channel_Flag              , &
-      SpcCoeff%Frequency                 , &
-      SpcCoeff%Wavenumber                , &
-      SpcCoeff%Planck_C1                 , &
-      SpcCoeff%Planck_C2                 , &
-      SpcCoeff%Band_C1                   , &
-      SpcCoeff%Band_C2                   , &
-      SpcCoeff%Cosmic_Background_Radiance, &
-      SpcCoeff%Solar_Irradiance
+    IF( dummy%Version > 2 ) THEN
+      ! Binary coefficient version 3 introduced for TROPICS instrument.
+      ! The SpcCoeff coefficients contain 'PolAngle' as an additional
+      ! array.
+      READ ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        SpcCoeff%Sensor_Channel            , &
+        SpcCoeff%Polarization              , &
+        SpcCoeff%PolAngle                  , &
+        SpcCoeff%Channel_Flag              , &
+        SpcCoeff%Frequency                 , &
+        SpcCoeff%Wavenumber                , &
+        SpcCoeff%Planck_C1                 , &
+        SpcCoeff%Planck_C2                 , &
+        SpcCoeff%Band_C1                   , &
+        SpcCoeff%Band_C2                   , &
+        SpcCoeff%Cosmic_Background_Radiance, &
+        SpcCoeff%Solar_Irradiance
+    ELSE IF( dummy%Version < 3 ) THEN
+      ! Version 2 is the default binary SpcCoeff version for 
+      ! REL-2.4.0 and older.
+      READ ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        SpcCoeff%Sensor_Channel            , &
+        SpcCoeff%Polarization              , &
+        SpcCoeff%Channel_Flag              , &
+        SpcCoeff%Frequency                 , &
+        SpcCoeff%Wavenumber                , &
+        SpcCoeff%Planck_C1                 , &
+        SpcCoeff%Planck_C2                 , &
+        SpcCoeff%Band_C1                   , &
+        SpcCoeff%Band_C2                   , &
+        SpcCoeff%Cosmic_Background_Radiance, &
+        SpcCoeff%Solar_Irradiance
+    ELSE
+        msg = 'Unrecognized SpcCoeff version. '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+    END IF
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading channel data. '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
@@ -564,7 +609,7 @@ CONTAINS
 
   FUNCTION SpcCoeff_Binary_WriteFile( &
     Filename, &  ! Input
-    SpcCoeff, &  ! Output
+    SpcCoeff, &  ! Input
     Quiet   , &  ! Optional input
     Debug   ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
@@ -585,7 +630,7 @@ CONTAINS
     INTEGER :: fid
     INTEGER :: ac_present
     INTEGER :: nc_present
-    
+    INTEGER(long) :: Sensor_Type
 
     ! Setup
     err_stat = SUCCESS
@@ -628,10 +673,19 @@ CONTAINS
       WRITE( msg,'("Error writing data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
     END IF
+    
+    ! If it Is_Active_Sensor then add ACTIVE_SENOR to Sensor_Type
+    IF (SpcCoeff%Is_Active_Sensor) THEN
+        Sensor_Type = SpcCoeff%Sensor_Type + ACTIVE_SENSOR
+    ELSE
+        Sensor_Type = SpcCoeff%Sensor_Type
+    END IF
+    
+    
     ! ...Write the sensor info
     WRITE( fid, IOSTAT=io_stat ) &
       SpcCoeff%Sensor_Id       , &
-      SpcCoeff%Sensor_Type     , &
+      Sensor_Type              , &
       SpcCoeff%WMO_Satellite_Id, &
       SpcCoeff%WMO_Sensor_Id   
     IF ( io_stat /= 0 ) THEN
@@ -639,18 +693,38 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
     ! ...Write the channel data
-    WRITE( fid, IOSTAT=io_stat ) &
-      SpcCoeff%Sensor_Channel            , &
-      SpcCoeff%Polarization              , &
-      SpcCoeff%Channel_Flag              , &
-      SpcCoeff%Frequency                 , &
-      SpcCoeff%Wavenumber                , &
-      SpcCoeff%Planck_C1                 , &
-      SpcCoeff%Planck_C2                 , &
-      SpcCoeff%Band_C1                   , &
-      SpcCoeff%Band_C2                   , &
-      SpcCoeff%Cosmic_Background_Radiance, &
-      SpcCoeff%Solar_Irradiance             
+    IF(SpcCoeff%Version > 2) THEN
+      WRITE( fid, IOSTAT=io_stat ) &
+          SpcCoeff%Sensor_Channel            , &
+          SpcCoeff%Polarization              , &
+          SpcCoeff%PolAngle                  , &
+          SpcCoeff%Channel_Flag              , &
+          SpcCoeff%Frequency                 , &
+          SpcCoeff%Wavenumber                , &
+          SpcCoeff%Planck_C1                 , &
+          SpcCoeff%Planck_C2                 , &
+          SpcCoeff%Band_C1                   , &
+          SpcCoeff%Band_C2                   , &
+          SpcCoeff%Cosmic_Background_Radiance, &
+          SpcCoeff%Solar_Irradiance 
+    ELSE IF(SpcCoeff%Version < 3) THEN
+      WRITE( fid, IOSTAT=io_stat ) &
+          SpcCoeff%Sensor_Channel            , &
+          SpcCoeff%Polarization              , &
+          SpcCoeff%Channel_Flag              , &
+          SpcCoeff%Frequency                 , &
+          SpcCoeff%Wavenumber                , &
+          SpcCoeff%Planck_C1                 , &
+          SpcCoeff%Planck_C2                 , &
+          SpcCoeff%Band_C1                   , &
+          SpcCoeff%Band_C2                   , &
+          SpcCoeff%Cosmic_Background_Radiance, &
+          SpcCoeff%Solar_Irradiance      
+    ELSE
+      WRITE( msg,'("Unrecognized SpcCoeff Version. Version = ",i0)' ) &
+          SpcCoeff%Version
+      CALL Write_Cleanup(); RETURN
+    END IF       
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing channel data. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN

@@ -44,13 +44,13 @@ MODULE LBLRTM_Panel_IO
   ! Procedures
   PUBLIC :: LBLRTM_Panel_Read
   PUBLIC :: LBLRTM_Panel_Write
-  PUBLIC :: LBLRTM_Panel_IOVersion
+  !PUBLIC :: LBLRTM_Panel_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -449,9 +449,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Panel_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Panel_IOVersion
+  !SUBROUTINE LBLRTM_Panel_IOVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Panel_IOVersion
 
 END MODULE LBLRTM_Panel_IO

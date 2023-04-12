@@ -27,8 +27,7 @@ MODULE NLTECoeff_netCDF_IO
                               NLTECoeff_Create      , &
                               NLTECoeff_Inspect     , &
                               NLTECoeff_ValidRelease, &
-                              NLTECoeff_Info        , &
-                              NLTECoeff_DefineVersion
+                              NLTECoeff_Info        
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -43,14 +42,12 @@ MODULE NLTECoeff_netCDF_IO
   PUBLIC :: NLTECoeff_netCDF_InquireFile
   PUBLIC :: NLTECoeff_netCDF_ReadFile
   PUBLIC :: NLTECoeff_netCDF_WriteFile
-  PUBLIC :: NLTECoeff_netCDF_IOVersion
+  !PUBLIC :: NLTECoeff_netCDF_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module version
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
@@ -776,7 +773,7 @@ CONTAINS
     ! Close the file
     nf90_status = NF90_CLOSE( fileid )
     close_file = .FALSE.
-    IF ( nf90_status /= NF90_NOERR ) THEN
+ IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error closing output file - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Write_Cleanup(); RETURN
     END IF
@@ -1195,10 +1192,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE NLTECoeff_netCDF_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE NLTECoeff_netCDF_IOVersion
+!  SUBROUTINE NLTECoeff_netCDF_IOVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    Id = MODULE_VERSION_ID
+!  END SUBROUTINE NLTECoeff_netCDF_IOVersion
 
 
 !##################################################################################
@@ -1255,10 +1252,10 @@ CONTAINS
     ! Mandatory global attributes
     ! ...Software ID
     gattname = WRITE_MODULE_HISTORY_GATTNAME
-    nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),MODULE_VERSION_ID )
-    IF ( nf90_status /= NF90_NOERR ) THEN
-      CALL WriteGAtts_Cleanup(); RETURN
-    END IF
+    !nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),MODULE_VERSION_ID )
+    !IF ( nf90_status /= NF90_NOERR ) THEN
+    !  CALL WriteGAtts_Cleanup(); RETURN
+    !END IF
     ! ...Creation date
     CALL DATE_AND_TIME( cdate, ctime, czone )
     gattname = CREATION_DATE_AND_TIME_GATTNAME

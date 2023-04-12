@@ -1,0 +1,107 @@
+
+version: 0.2
+
+env:
+  shell: bash
+  parameter-store:
+    GIT_USER: "/CodeBuild/Git_USER"
+    GIT_PASS: "/CodeBuild/Git_PASS"
+
+phases:
+  install:
+    commands:
+      - echo Executing install phase
+      - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
+      - echo $CODEBUILD_SOURCE_REPO_URL
+      - echo $CODEBUILD_SOURCE_VERSION
+
+      - echo $CODEBUILD_WEBHOOK_MERGE_COMMIT
+      - echo $CODEBUILD_WEBHOOK_PREV_COMMIT
+      - echo $CODEBUILD_WEBHOOK_HEAD_REF
+      - echo $CODEBUILD_WEBHOOK_ACTOR_ACCOUNT_ID
+      - echo $CODEBUILD_WEBHOOK_EVENT
+      - echo $CODEBUILD_WEBHOOK_TRIGGER
+      - echo $CODEBUILD_WEBHOOK_BASE_REF
+
+      # Codebuild only runs on PUSH events if HEAD_REF
+      # is refs/heads/develop (merge to develop). In this
+      # case CODEBUILD_GIT_BRANCH="develop"
+
+      - if [ "$CODEBUILD_WEBHOOK_EVENT" = "PUSH" ];
+        then export CODEBUILD_GIT_BRANCH="develop";
+        echo "Merging to develop";
+        else export CODEBUILD_GIT_BRANCH=${CODEBUILD_WEBHOOK_HEAD_REF#refs/heads/};
+        fi
+
+      - if [ "$CODEBUILD_WEBHOOK_BASE_REF" = "refs/heads/develop" ];
+        then echo "base is develop";
+        export FALLBACK_BRANCH="develop";
+        else echo "base is release/crtm_jedi";
+        export FALLBACK_BRANCH="release/crtm_jedi";
+        fi
+ 
+
+      - echo "CODEBUILD_GIT_BRANCH=${CODEBUILD_GIT_BRANCH}"
+      - echo "FALLBACK_BRANCH=${FALLBACK_BRANCH}"
+      - echo "CODEBUILD_SOURCE_VERSION=${CODEBUILD_SOURCE_VERSION}"
+
+      - mkdir /jcsda
+      - git lfs install # creates .gitconfig
+      - cd CI
+      - ./clone.sh $GIT_USER $GIT_PASS jcsda-internal/crtm $CODEBUILD_GIT_BRANCH crtm /jcsda $FALLBACK_BRANCH
+
+  pre_build:
+    commands:
+      - pwd
+      - echo $CODEBUILD_SRC_DIR
+      - mkdir /jcsda/build
+
+      # Upload branch name and commit sha as CodeBuild artifact to S3
+      - mkdir -p /jcsda/artifacts
+      - echo ${CODEBUILD_GIT_BRANCH} > /jcsda/artifacts/branch_name.txt
+      - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /jcsda/artifacts/commit_sha.txt
+
+  build:
+    on-failure: CONTINUE
+    commands:
+      - echo Executing build phase
+      - echo $CODEBUILD_BUILD_SUCCEEDING
+      - export BUILD_STATUS="0"
+      - echo $BUILD_STATUS
+        #- ./Set_CRTM_Environment.sh
+      - cd /jcsda/build
+      - ecbuild -Wno-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCDASH_OVERRIDE_GIT_BRANCH=$CODEBUILD_GIT_BRANCH -DCTEST_UPDATE_VERSION_ONLY=FALSE /jcsda/crtm
+      - make -j4
+
+      - if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ];
+        then export BUILD_STATUS="1";
+        echo "Build passed";
+        fi
+      - echo $BUILD_STATUS
+      - ctest -VV -R get_crtm_coeffs
+      - ctest -C RelWithDebInfo -D ExperimentalTest
+
+    finally:
+      - ctest -C RelWithDebInfo -D ExperimentalSubmit -M Continuous -- --track Continuous --group Continuous
+
+  post_build:
+    commands:
+      - echo Executing post_build phase
+      - echo $CODEBUILD_BUILD_SUCCEEDING
+      - echo $BUILD_STATUS
+
+      # upload find cdash url and upload it as CodeBuild artifact to S3
+      - if [ "$BUILD_STATUS" = "1" ];
+        then echo "Build & tests passed, find cdash url";
+        bash $CODEBUILD_SRC_DIR/CI/cdash-url.sh $CODEBUILD_SRC_DIR/build/Testing;
+        url=$(bash $CODEBUILD_SRC_DIR/CI/cdash-url.sh $CODEBUILD_SRC_DIR/build/Testing);
+        echo $url;
+        echo ${url} > /jcsda/artifacts/cdash-url.txt;
+        cat /jcsda/artifacts/cdash-url.txt;
+        else echo "Build failed";
+        fi
+
+artifacts:
+  files:
+    - '/jcsda/artifacts/*'
+  name: crtm-clang-url

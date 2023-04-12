@@ -9,6 +9,10 @@
 !       Written by:     Paul van Delst, 22-Jun-2005
 !                       paul.vandelst@noaa.gov
 !
+!      Modified by:     Cheng Dang, 18-Mar-2022
+!                       dangch@ucar.edu
+!                       Add water temperature dimension
+!
 
 MODULE CRTM_IRSSEM
 
@@ -25,10 +29,13 @@ MODULE CRTM_IRSSEM
                                  Clear_LPoly, &
                                  Find_Index, &
                                  Interp_3D, &
+                                 Interp_4D, &
                                  LPoly_TL, &
                                  Interp_3D_TL, &
+                                 Interp_4D_TL, &
                                  LPoly_AD, &
-                                 Interp_3D_AD
+                                 Interp_3D_AD, &
+                                 Interp_4D_AD
   USE IRwaterCoeff_Define, ONLY: IRwaterCoeff_type
   ! Disable implicit typing
   IMPLICIT NONE
@@ -70,22 +77,27 @@ MODULE CRTM_IRSSEM
     TYPE(LPoly_type), ALLOCATABLE :: wlp(:)  ! Angle
     TYPE(LPoly_type)              :: xlp     ! Frequency
     TYPE(LPoly_type)              :: ylp     ! Wind Speed
+    TYPE(LPoly_type)              :: zlp     ! Water Temperature
     ! The LUT interpolation indices
-    INTEGER, ALLOCATABLE :: i1(:), i2(:)     ! Angle
+    INTEGER, ALLOCATABLE :: i1(:) , i2(:)    ! Angle
     INTEGER              :: j1    , j2       ! Frequency
     INTEGER              :: k1    , k2       ! Wind Speed
+    INTEGER              :: l1    , l2       ! Water Temperature
     ! The LUT interpolation boundary check
     LOGICAL, ALLOCATABLE :: a_outbound(:)    ! Angle
     LOGICAL              :: f_outbound       ! Frequency
     LOGICAL              :: v_outbound       ! Wind Speed
+    LOGICAL              :: t_outbound       ! Water Temperature
     ! The interpolation input
     REAL(fp), ALLOCATABLE :: a_int(:)        ! Angle
     REAL(fp)              :: f_int           ! Frequency
     REAL(fp)              :: v_int           ! Wind Speed
+    REAL(fp)              :: t_int           ! Water Temperature
     ! The data to be interpolated
     REAL(fp), ALLOCATABLE :: a(:,:)          ! Angle
     REAL(fp), ALLOCATABLE :: f(:)            ! Frequency
     REAL(fp), ALLOCATABLE :: v(:)            ! Wind Speed
+    REAL(fp), ALLOCATABLE :: t(:)            ! Water Temperature
   END TYPE Einterp_type
 
   ! The main internal variable structure
@@ -120,6 +132,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Compute_IRSSEM( IRwaterCoeff, &
+!                                           Water_Temperature , &
 !                                           Wind_Speed  , &
 !                                           Frequency   , &
 !                                           Angle       , &
@@ -132,6 +145,12 @@ CONTAINS
 !                       model to use.
 !                       UNITS:      N/A
 !                       TYPE:       IRwaterCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!   Water_Temperature:  Water_Temperature
+!                       UNITS:      Kelvin (K)
+!                       TYPE:       REAL(fp)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -183,18 +202,20 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_IRSSEM( &
-    IRwaterCoeff, &  ! Input model coefficients
-    Wind_Speed  , &  ! Input
-    Frequency   , &  ! Input
-    Angle       , &  ! Input
-    iVar        , &  ! Internal variable output
-    Emissivity  ) &  ! Output
+    IRwaterCoeff      , &  ! Input model coefficients
+    Water_Temperature , &  ! Input
+    Wind_Speed        , &  ! Input
+    Frequency         , &  ! Input
+    Angle             , &  ! Input
+    iVar              , &  ! Internal variable output
+    Emissivity        ) &  ! Output
   RESULT( err_stat )
     ! Arguments
     TYPE(IRwaterCoeff_type), INTENT(IN)  :: IRwaterCoeff
-    REAL(fp)               , INTENT(IN)  :: Wind_Speed     ! v
-    REAL(fp)               , INTENT(IN)  :: Frequency      ! f
-    REAL(fp)               , INTENT(IN)  :: Angle(:)       ! a
+    REAL(fp)               , INTENT(IN)  :: Water_Temperature  ! t
+    REAL(fp)               , INTENT(IN)  :: Wind_Speed         ! v
+    REAL(fp)               , INTENT(IN)  :: Frequency          ! f
+    REAL(fp)               , INTENT(IN)  :: Angle(:)           ! a
     TYPE(iVar_type)        , INTENT(OUT) :: iVar
     REAL(fp)               , INTENT(OUT) :: Emissivity(:)
     ! Function result
@@ -226,6 +247,20 @@ CONTAINS
     END IF
     ! ...Convert angles to secants
     sec_angle = ONE/COS(DEGREES_TO_RADIANS*Angle)
+
+    ! Compute the water temperature interpolating polynomial
+    ! ...Required only for LUT "Nalli2"
+    ! ...Find the LUT indices and check if input is out of bounds
+    IF ( IRwaterCoeff%Classification_Name == "Nalli2" ) THEN
+      iVar%ei%t_int = Water_Temperature
+      CALL find_index(IRwaterCoeff%Temperature, &
+                      iVar%ei%t_int, iVar%ei%l1, iVar%ei%l2, iVar%ei%t_outbound)
+      iVar%ei%t = IRwaterCoeff%Temperature(iVar%ei%l1:iVar%ei%l2)
+      ! ...Compute the polynomial
+      CALL LPoly( iVar%ei%t    , & ! Input
+                  iVar%ei%t_int, & ! Input
+                  iVar%ei%zlp    ) ! Output
+    END IF
 
 
     ! Compute the wind speed interpolating polynomial
@@ -272,16 +307,28 @@ CONTAINS
                   iVar%ei%a_int(i), & ! Input
                   iVar%ei%wlp(i)    ) ! Output
 
-
       ! Compute the interpolated emissivity
-      CALL Interp_3D( IRwaterCoeff%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
-                                               iVar%ei%j1   :iVar%ei%j2   , &
-                                               iVar%ei%k1   :iVar%ei%k2     ), & ! Input
-                      iVar%ei%wlp(i), & ! Input
-                      iVar%ei%xlp   , & ! Input
-                      iVar%ei%ylp   , & ! Input
-                      Emissivity(i)   ) ! Output
-
+      IF ( IRwaterCoeff%Classification_Name == "Nalli2" ) THEN
+        ! WRITE(*,*) 'Interp_4D', Interp_4D
+        CALL Interp_4D( IRwaterCoeff%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
+                                                 iVar%ei%j1   :iVar%ei%j2   , &
+                                                 iVar%ei%k1   :iVar%ei%k2   , &
+                                                 iVar%ei%l1   :iVar%ei%l2     ), & ! Input
+                        iVar%ei%wlp(i), & ! Input
+                        iVar%ei%xlp   , & ! Input
+                        iVar%ei%ylp   , & ! Input
+                        iVar%ei%zlp   , & ! Input
+                        Emissivity(i)   ) ! Output
+      ELSE
+        CALL Interp_3D( IRwaterCoeff%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
+                                                 iVar%ei%j1   :iVar%ei%j2   , &
+                                                 iVar%ei%k1   :iVar%ei%k2   , &
+                                                 1 ), & ! Input
+                        iVar%ei%wlp(i), & ! Input
+                        iVar%ei%xlp   , & ! Input
+                        iVar%ei%ylp   , & ! Input
+                        Emissivity(i)   ) ! Output
+      END IF
     END DO
 
   END FUNCTION CRTM_Compute_IRSSEM
@@ -295,7 +342,8 @@ CONTAINS
 !
 ! PURPOSE:
 !       Function to compute the tangent-linear CRTM infrared sea surface
-!       emissivity (IRSSE) for input wind speed, frequency, and angles.
+!       emissivity (IRSSE) for input water temperature, wind speed, frequency,
+!       and angles.
 !
 !       This function must be called *after* the forward model function,
 !       CRTM_Compute_IRSSEM, has been called. The forward model function
@@ -303,6 +351,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Compute_IRSSEM_TL( IRwaterCoeff , &
+!                                              Water_Temperature_TL, &
 !                                              Wind_Speed_TL, &
 !                                              iVar         , &
 !                                              Emissivity_TL  )
@@ -312,6 +361,12 @@ CONTAINS
 !                       model to use.
 !                       UNITS:      N/A
 !                       TYPE:       IRwaterCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+! Water_Temperature_TL:  The tangent-linear water temperature.
+!                       UNITS:      Kelvin (K)
+!                       TYPE:       REAL(fp)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -350,13 +405,15 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_IRSSEM_TL( &
-    IRwaterCoeff , &  ! Input model coefficients
-    Wind_Speed_TL, &  ! Input
-    iVar         , &  ! Internal variable input
-    Emissivity_TL) &  ! Output
+    IRwaterCoeff        , &  ! Input model coefficients
+    Water_Temperature_TL, &  ! Input
+    Wind_Speed_TL       , &  ! Input
+    iVar                , &  ! Internal variable input
+    Emissivity_TL       ) &  ! Output
   RESULT( err_stat )
     ! Arguments
     TYPE(IRwaterCoeff_type), INTENT(IN)  :: IRwaterCoeff
+    REAL(fp)               , INTENT(IN)  :: Water_Temperature_TL
     REAL(fp)               , INTENT(IN)  :: Wind_Speed_TL
     TYPE(iVar_type)        , INTENT(IN)  :: iVar
     REAL(fp)               , INTENT(OUT) :: Emissivity_TL(:)
@@ -367,9 +424,9 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER  :: i
-    REAL(fp) :: v_TL(NPTS)
-    REAL(fp) :: e_TL(NPTS,NPTS,NPTS)
-    TYPE(LPoly_Type) :: ylp_TL, xlp_TL, wlp_TL
+    REAL(fp) :: v_TL(NPTS), t_TL(NPTS)
+    REAL(fp) :: e_TL_3D(NPTS,NPTS,NPTS), e_TL_4D(NPTS,NPTS,NPTS,NPTS)
+    TYPE(LPoly_Type) :: ylp_TL, xlp_TL, wlp_TL, zlp_TL
 
     ! Set up
     err_stat = SUCCESS
@@ -387,19 +444,33 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
       RETURN
     END IF
+    ! ...No TL if water temperature is out of bounds
+    IF (IRwaterCoeff%n_Temperature > 1 .AND. iVar%ei%t_outbound) THEN
+      Emissivity_TL = ZERO
+      RETURN
+    END IF
     ! ...No TL if wind speed is out of bounds
     IF ( iVar%ei%v_outbound ) THEN
       Emissivity_TL = ZERO
       RETURN
     END IF
     ! ...Initialise local TL variables
+    t_TL = ZERO
     v_TL = ZERO
-    e_TL = ZERO
+    e_TL_3D = ZERO
+    e_TL_4D = ZERO
     CALL Clear_LPoly(wlp_TL)
     CALL Clear_LPoly(xlp_TL)
 
 
     ! Calculate the TL interpolating
+    ! polynomials for water temperature
+    IF ( IRwaterCoeff%Classification_Name == "Nalli2" ) THEN
+      CALL LPoly_TL( iVar%ei%t, iVar%ei%t_int,   & ! FWD Input
+                     iVar%ei%zlp,                & ! FWD Input
+                     t_TL, Water_Temperature_TL, & ! TL  Input
+                     zlp_TL                      ) ! TL  Output
+    END IF
     ! polynomials for wind speed
     CALL LPoly_TL( iVar%ei%v, iVar%ei%v_int, & ! FWD Input
                    iVar%ei%ylp,              & ! FWD Input
@@ -411,14 +482,28 @@ CONTAINS
     DO i = 1, iVar%ei%n_Angles
 
       ! Perform interpolation
-      CALL interp_3D_TL(IRwaterCoeff%Emissivity(iVar%ei%i1(i):iVar%ei%i2(i), &
-                                            iVar%ei%j1   :iVar%ei%j2   , &
-                                            iVar%ei%k1   :iVar%ei%k2     ), & ! FWD Emissivity input
-                        iVar%ei%wlp(i), & ! FWD polynomial input
-                        iVar%ei%xlp   , & ! FWD polynomial input
-                        iVar%ei%ylp   , & ! FWD polynomial input
-                        e_TL, wlp_TL, xlp_TL, ylp_TL, & ! TL input
-                        Emissivity_TL(i)              ) ! Output
+      IF ( IRwaterCoeff%Classification_Name == "Nalli2" ) THEN
+        CALL interp_4D_TL(IRwaterCoeff%Emissivity(iVar%ei%i1(i):iVar%ei%i2(i), &
+                                                  iVar%ei%j1   :iVar%ei%j2   , &
+                                                  iVar%ei%k1   :iVar%ei%k2   , &
+                                                  iVar%ei%l1   :iVar%ei%l2  ), & ! FWD Emissivity input
+                          iVar%ei%wlp(i), & ! FWD polynomial input
+                          iVar%ei%xlp   , & ! FWD polynomial input
+                          iVar%ei%ylp   , & ! FWD polynomial input
+                          iVar%ei%zlp   , & ! FWD polynomial input
+                          e_TL_4D, wlp_TL, xlp_TL, ylp_TL, zlp_TL, & ! TL input
+                          Emissivity_TL(i)              ) ! Output
+      ELSE
+        CALL interp_3D_TL(IRwaterCoeff%Emissivity(iVar%ei%i1(i):iVar%ei%i2(i), &
+                                                  iVar%ei%j1   :iVar%ei%j2   , &
+                                                  iVar%ei%k1   :iVar%ei%k2   , &
+                                                  1 ), & ! FWD Emissivity input
+                          iVar%ei%wlp(i), & ! FWD polynomial input
+                          iVar%ei%xlp   , & ! FWD polynomial input
+                          iVar%ei%ylp   , & ! FWD polynomial input
+                          e_TL_3D, wlp_TL, xlp_TL, ylp_TL, & ! TL input
+                          Emissivity_TL(i)              ) ! Output
+      END IF
 
     END DO
 
@@ -440,10 +525,11 @@ CONTAINS
 !       populates the internal variable structure argument, iVar.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_IRSSEM_AD( IRwaterCoeff , &
-!                                              Emissivity_AD, &
-!                                              iVar         , &
-!                                              Wind_Speed_AD  )
+!       Error_Status = CRTM_Compute_IRSSEM_AD( IRwaterCoeff        , &
+!                                              Emissivity_AD       , &
+!                                              iVar                , &
+!                                              Wind_Speed_AD       , &
+!                                              Water_Temperature_AD  )
 !
 ! INPUTS:
 !       IRwaterCoeff:   Infrared water emissivity model coefficient object.
@@ -478,6 +564,13 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
+! Water_Temperature_AD: Adjoint water temperature.
+!                       *** MUST HAVE VALUE ON ENTRY ***
+!                       UNITS:      per Kelvin, (K)^-1
+!                       TYPE:       REAL(fp)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
 !                       The error codes are defined in the Message_Handler module.
@@ -491,16 +584,18 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_IRSSEM_AD( &
-    IRwaterCoeff , &  ! Input model coefficients
-    Emissivity_AD, &  ! Input
-    iVar         , &  ! Internal Variable Input
-    Wind_Speed_AD) &  ! Output
+    IRwaterCoeff         , &  ! Input model coefficients
+    Emissivity_AD        , &  ! Input
+    iVar                 , &  ! Internal Variable Input
+    Wind_Speed_AD        , &  ! Output
+    Water_Temperature_AD ) &  ! Output
   RESULT( err_stat )
     ! Arguments
     TYPE(IRwaterCoeff_type), INTENT(IN)     :: IRwaterCoeff
     REAL(fp)               , INTENT(IN OUT) :: Emissivity_AD(:)
     TYPE(iVar_type)        , INTENT(IN)     :: iVar
     REAL(fp)               , INTENT(IN OUT) :: Wind_Speed_AD
+    REAL(fp)               , INTENT(IN OUT) :: Water_Temperature_AD
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -508,14 +603,16 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER  :: i
-    REAL(fp) :: e_AD(NPTS,NPTS,NPTS)
-    REAL(fp) :: v_AD(NPTS)
-    TYPE(LPoly_Type) :: wlp_AD, xlp_AD, ylp_AD
+    REAL(fp) :: e_AD_3D(NPTS,NPTS,NPTS), e_AD_4D(NPTS,NPTS,NPTS,NPTS)
+    REAL(fp) :: v_AD(NPTS), t_AD(NPTS)
+    TYPE(LPoly_Type) :: wlp_AD, xlp_AD, ylp_AD, zlp_AD
 
     ! Set Up
     err_stat = SUCCESS
-    e_AD = ZERO
+    e_AD_3D = ZERO
+    e_AD_4D = ZERO
     v_AD = ZERO
+    t_AD = ZERO
     ! ...Check internal variable allocation
     IF ( .NOT. Einterp_Associated( iVar%ei ) ) THEN
       err_stat = FAILURE
@@ -530,26 +627,42 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
       RETURN
     END IF
+    ! ...No AD if water temperature is out of bounds
+    IF (IRwaterCoeff%n_Temperature > 1 .AND. iVar%ei%t_outbound) RETURN
     ! ...No AD if wind speed is out of bounds
     IF ( iVar%ei%v_outbound ) RETURN
     ! ...Initialize local variables
     CALL Clear_LPoly(wlp_AD)
     CALL Clear_LPoly(xlp_AD)
     CALL Clear_LPoly(ylp_AD)
+    CALL Clear_LPoly(zlp_AD)
 
     ! Loop over emissivity calculation angles
     DO i = 1, iVar%ei%n_Angles
-
-      ! Get the adjoint interpoalting polynomial for wind speed
-      CALL Interp_3D_AD(IRwaterCoeff%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
-                                                 iVar%ei%j1   :iVar%ei%j2   , &
-                                                 iVar%ei%k1   :iVar%ei%k2     ), & ! FWD Input
-                        iVar%ei%wlp(i)  , & ! FWD Input
-                        iVar%ei%xlp     , & ! FWD Input
-                        iVar%ei%ylp     , & ! FWD Input
-                        Emissivity_AD(i), & ! AD Input
-                        e_AD, wlp_AD, xlp_AD, ylp_AD ) ! AD Output
-
+      IF ( IRwaterCoeff%Classification_Name == "Nalli2" ) THEN
+        ! Get the adjoint interpoalting polynomial for wind speed and water temperature
+        CALL Interp_4D_AD(IRwaterCoeff%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
+                                                   iVar%ei%j1   :iVar%ei%j2   , &
+                                                   iVar%ei%k1   :iVar%ei%k2   , &
+                                                   iVar%ei%l1   :iVar%ei%l2  ), & ! FWD Input
+                          iVar%ei%wlp(i)  , & ! FWD Input
+                          iVar%ei%xlp     , & ! FWD Input
+                          iVar%ei%ylp     , & ! FWD Input
+                          iVar%ei%zlp     , & ! FWD Input
+                          Emissivity_AD(i), & ! AD Input
+                          e_AD_4D, wlp_AD, xlp_AD, ylp_AD, zlp_AD ) ! AD Output
+      ELSE
+        ! Get the adjoint interpoalting polynomial for wind speed
+        CALL Interp_3D_AD(IRwaterCoeff%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
+                                                   iVar%ei%j1   :iVar%ei%j2   , &
+                                                   iVar%ei%k1   :iVar%ei%k2   , &
+                                                   1 ), & ! FWD Input
+                          iVar%ei%wlp(i)  , & ! FWD Input
+                          iVar%ei%xlp     , & ! FWD Input
+                          iVar%ei%ylp     , & ! FWD Input
+                          Emissivity_AD(i), & ! AD Input
+                          e_AD_3D, wlp_AD, xlp_AD, ylp_AD ) ! AD Output
+      END IF
       ! Set adjoint emissivity to zero
       Emissivity_AD(i) = ZERO
 
@@ -562,6 +675,16 @@ CONTAINS
                   ylp_AD       , & ! AD  Input
                   v_AD         , & ! AD  Output
                   Wind_Speed_AD  ) ! AD  Output
+
+    ! Compute the water temperature adjoint
+    IF ( IRwaterCoeff%n_Temperature > 1 ) THEN
+      CALL Lpoly_AD(iVar%ei%t           , & ! FWD Input
+                    iVar%ei%t_int       , & ! FWD Input
+                    iVar%ei%zlp         , & ! FWD Input
+                    zlp_AD              , & ! AD  Input
+                    t_AD                , & ! AD  Output
+                    Water_Temperature_AD  ) ! AD  Output
+    END IF
 
   END FUNCTION CRTM_Compute_IRSSEM_AD
 

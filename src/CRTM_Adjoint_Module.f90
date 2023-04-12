@@ -10,8 +10,8 @@
 !
 
 MODULE CRTM_Adjoint_Module
-  
-  
+
+
   ! ------------
   ! Module usage
   ! ------------
@@ -116,6 +116,9 @@ MODULE CRTM_Adjoint_Module
   USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature   , &
                                         CRTM_Planck_Temperature_AD
   USE CRTM_CloudCover_Define,     ONLY: CRTM_CloudCover_type
+  USE CRTM_Active_Sensor,         ONLY: CRTM_Compute_Reflectivity, &
+                                        CRTM_Compute_Reflectivity_AD, &
+                                        Calculate_Cloud_Water_Density
 
   ! Internal variable definition modules
   ! ...AtmOptics
@@ -280,7 +283,7 @@ CONTAINS
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  
+
   FUNCTION CRTM_Adjoint( &
        Atmosphere   ,    &  ! FWD Input, M
        Surface      ,    &  ! FWD Input, M
@@ -359,14 +362,14 @@ CONTAINS
     ! SET UP
     ! ------
     Error_Status = SUCCESS
-    
-    
+
+
     ! If no sensors or channels, simply return
     n_Sensors  = SIZE(ChannelInfo)
     n_Channels = SUM(CRTM_ChannelInfo_n_Channels(ChannelInfo))
     IF ( n_Sensors == 0 .OR. n_Channels == 0 ) RETURN
-    
-    
+
+
     ! Check spectral arrays
     IF ( SIZE(RTSolution   ,DIM=1) < n_Channels .OR. &
          SIZE(RTSolution_AD,DIM=1) < n_Channels      ) THEN
@@ -377,8 +380,8 @@ CONTAINS
        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
        RETURN
     END IF
-    
-    
+
+
     ! Check the number of profiles
     ! ...Number of atmospheric profiles.
     n_Profiles = SIZE(Atmosphere)
@@ -409,8 +412,8 @@ CONTAINS
 
     ! Reinitialise the output RTSolution
     CALL CRTM_RTSolution_Zero(RTSolution)
-    
-    
+
+
     ! Allocate the profile independent surface optics local structure
     CALL CRTM_SfcOptics_Create( SfcOptics   , MAX_N_ANGLES, MAX_N_STOKES )
     CALL CRTM_SfcOptics_Create( SfcOptics_AD, MAX_N_ANGLES, MAX_N_STOKES )
@@ -427,8 +430,7 @@ CONTAINS
     ! PROFILE LOOP
     ! ------------
     Profile_Loop: DO m = 1, n_Profiles
-       
-       
+
        ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
        IF ( Atmosphere(m)%n_Clouds > 0) THEN
           !** clear clouds where cloud_fraction < threshold
@@ -439,8 +441,8 @@ CONTAINS
                 Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
              END WHERE
           END DO
-          
-          
+
+
           IF(.NOT. CRTM_CloudCoeff_IsLoaded() )THEN
              Error_Status = FAILURE
              WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
@@ -456,13 +458,12 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
        END IF
-       
-       
+
+
        ! Copy over forward "non-variable" inputs to adjoint outputs
        CALL CRTM_Atmosphere_NonVariableCopy( Atmosphere(m), Atmosphere_AD(m) )
        CALL CRTM_Surface_NonVariableCopy( Surface(m), Surface_AD(m) )
-       
-       
+
        ! Check the optional Options structure argument
        Opt = Default_Options
        IF ( Options_Present ) THEN
@@ -473,10 +474,10 @@ CONTAINS
        END IF
        ! ...Assign the option specific SfcOptics input
        SfcOptics%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
-       
+
        ! Check whether to skip this profile
        IF ( Opt%Skip_Profile ) CYCLE Profile_Loop
-       
+
        ! Check the input data if required
        IF ( Opt%Check_Input ) THEN
           ! ...Mandatory inputs
@@ -553,10 +554,15 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
-      ! ...Similarly extend a copy of the input adjoint atmosphere
+      ! Calculate cloud water density
+      CALL Calculate_Cloud_Water_Density(Atm)
+      ! ...Similarly extend a copy of the input adjoint atmosphere 
       Atm_AD = CRTM_Atmosphere_AddLayerCopy( Atmosphere_AD(m), Atm%n_Added_Layers )
-
-
+      
+      ! Calculate the height and water density
+      !CALL Calculate_Cloud_Water_Density(Atm, Atm_AD)
+      Atm_AD%Height = Atm%Height
+      
       ! Prepare the atmospheric optics structures
       ! ...Allocate the atmospheric optics structures based on Atm extension
       CALL CRTM_AtmOptics_Create( AtmOptics, &
@@ -606,7 +612,7 @@ CONTAINS
 
       ! Setup for fractional cloud coverage
       IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
-      
+
         ! Compute cloudcover
         Error_Status = CloudCover%Compute_CloudCover(atm, Overlap = opt%Overlap_Id)
         IF ( Error_Status /= SUCCESS ) THEN
@@ -664,7 +670,6 @@ CONTAINS
 
         ! Shorter name
         SensorIndex = ChannelInfo(n)%Sensor_Index
-
 
         ! Check if antenna correction to be applied for current sensor
         compute_antenna_correction = ( Opt%Use_Antenna_Correction               .AND. &
@@ -769,8 +774,12 @@ CONTAINS
 
           ! Determine the number of streams (n_Full_Streams) in up+downward directions
           IF ( Opt%Use_N_Streams ) THEN
-            n_Full_Streams = Options(m)%n_Streams
-            RTSolution(ln,m)%n_Full_Streams = n_Full_Streams + 2
+            ! 1. AtmOptics(nt)%n_Legendre_Terms = n_Full_Streams = the number of pcoeff
+            !    terms used to reconstruct the phase function;
+            ! 2. AerosolCoeff and CloudCoeff LUTs Require at least 4 terms to properly
+            !    reconstruct the phase function and set up truncation factor.
+            n_Full_Streams = max(4, Opt%n_Streams)
+            RTSolution(ln,m)%n_Full_Streams = max(4, Opt%n_Streams + 2)
             RTSolution(ln,m)%Scattering_Flag = .TRUE.
           ELSE
             n_Full_Streams = CRTM_Compute_nStreams( Atm             , &  ! Input
@@ -804,10 +813,8 @@ CONTAINS
           IF( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) .AND. RTV%Solar_Flag_true ) THEN
             RTV%Visible_Flag_true = .TRUE.
             ! Rayleigh phase function has 0, 1, 2 components.
-            IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
-              AtmOptics%n_Legendre_Terms = 4
-              AtmOptics_AD%n_Legendre_Terms = AtmOptics%n_Legendre_Terms
-              RTSolution(ln,m)%Scattering_FLAG = .TRUE.
+            ! Make sure CRTM always use a minmum of 6 streams for visible calculation.
+            IF( AtmOptics%n_Legendre_Terms == 4 ) THEN
               RTSolution(ln,m)%n_Full_Streams = AtmOptics%n_Legendre_Terms + 2
             END IF
             RTV%n_Azi = MIN( AtmOptics%n_Legendre_Terms - 1, MAX_N_AZIMUTH_FOURIER )
@@ -856,6 +863,7 @@ CONTAINS
           ! Compute the cloud particle absorption/scattering properties
           IF( Atm%n_Clouds > 0 ) THEN
             Error_Status = CRTM_Compute_CloudScatter( Atm         , &  ! Input
+                                                      GeometryInfo, &  ! Input
                                                       SensorIndex , &  ! Input
                                                       ChannelIndex, &  ! Input
                                                       AtmOptics   , &  ! Output
@@ -1007,10 +1015,18 @@ CONTAINS
               RTSolution(ln,m)%Total_Cloud_Cover = CloudCover%Total_Cloud_Cover
             END IF
 
-
             ! The radiance post-processing
             CALL Post_Process_RTSolution(RTSolution(ln,m))
 
+            ! Calculate reflectivity for active instruments
+            IF  ( SC(SensorIndex)%Is_Active_Sensor .AND. AtmOptics%Include_Scattering) THEN
+                CALL CRTM_Compute_Reflectivity(Atm             , & ! Input
+                                               AtmOptics       , & ! Input
+                                               GeometryInfo    , & ! Input
+                                               SensorIndex     , & ! Input
+                                               ChannelIndex    , & ! Input
+                                               RTSolution(ln,m))   ! Input/Output                        
+            ENDIF
             
             ! Perform clear-sky post and pre-processing
             IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
@@ -1033,7 +1049,7 @@ CONTAINS
             ! The adjoint radiance pre-processing
             CALL Pre_Process_RTSolution_AD(RTSolution(ln,m), RTSolution_AD(ln,m))
 
-          
+
             ! More fractionally cloudy atmospheres processing
             IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
 
@@ -1098,6 +1114,20 @@ CONTAINS
             END IF
 
 
+          ! Compute the adjoint for active sensors
+          ! It is prefered to keep the adjoint for active sensors here, thoguh it
+          ! may not be in the reverse order for TL code
+          IF  ( SC(SensorIndex)%Is_Active_Sensor .AND. AtmOptics%Include_Scattering) THEN
+              CALL CRTM_Compute_Reflectivity_AD(Atm       , & ! Input
+                                                AtmOptics   , &  ! Input 
+                                                RTSolution(ln,m), & ! Input
+                                                GeometryInfo    , & ! Input
+                                                SensorIndex , &  ! Input
+                                                ChannelIndex, &  ! Input
+                                                AtmOptics_AD   , &  ! Input/Output
+                                                RTSolution_AD(ln,m))   ! Input/Output
+          ENDIF
+          
           ELSE Sensor_Dependent_RTSolution
             ! --------------
             ! VISIBLE sensor
@@ -1292,13 +1322,13 @@ CONTAINS
               RETURN
             END IF
           END IF
-
-
+            
           ! Compute the adjoint cloud absorption/scattering properties
           IF ( Atm%n_Clouds > 0 ) THEN
             Error_Status = CRTM_Compute_CloudScatter_AD( Atm         , &  ! FWD Input
                                                          AtmOptics   , &  ! FWD Input
                                                          AtmOptics_AD, &  ! AD  Input
+                                                         GeometryInfo, &  ! Input
                                                          SensorIndex , &  ! Input
                                                          ChannelIndex, &  ! Input
                                                          Atm_AD      , &  ! AD  Output
@@ -1343,7 +1373,7 @@ CONTAINS
               RETURN
             END IF
           END IF
-
+ 
 
           ! Compute the adjoint gaseous absorption
           CALL CRTM_Compute_AtmAbsorption_AD( SensorIndex     , &  ! Input
@@ -1375,14 +1405,14 @@ CONTAINS
 
       END DO Sensor_Loop
 
-
+ 
       ! Adjoint of average surface skin temperature for multi-surface types
       CALL CRTM_Compute_SurfaceT_AD( Surface(m), SfcOptics_AD, Surface_AD(m) )
-
+ 
 
       ! Adjoint of cloud cover setup
       IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
-
+ 
         ! Post process the CLEAR sky structures for fractional cloud coverage
         ! ...Clear sky SfcOptics
         CALL CRTM_Compute_SurfaceT_AD( Surface(m), SfcOptics_Clear_AD, Surface_AD(m) )
@@ -1394,7 +1424,7 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
-
+ 
         ! Adjoint of the cloud coverage
         Error_Status = CloudCover_AD%Compute_CloudCover_AD(CloudCover, atm, atm_AD)
         IF ( Error_Status /= SUCCESS ) THEN
@@ -1404,8 +1434,7 @@ CONTAINS
           RETURN
         END IF
       END IF
-
-
+ 
       ! Adjoint of the atmosphere layer addition
       Error_Status = CRTM_Atmosphere_AddLayers_AD( Atmosphere(m), Atm_AD, Atmosphere_AD(m) )
       IF ( Error_Status /= SUCCESS ) THEN
@@ -1414,7 +1443,6 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
-
     END DO Profile_Loop
 
 
@@ -1438,7 +1466,6 @@ CONTAINS
     CALL CSvar_Destroy( CSvar )
     CALL ASvar_Destroy( ASvar )
     CALL RTV_Destroy( RTV )
-
 
 CONTAINS
 

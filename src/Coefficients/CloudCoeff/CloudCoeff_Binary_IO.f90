@@ -223,9 +223,10 @@ CONTAINS
                                CloudCoeff%n_IR_Frequencies, &
                                CloudCoeff%n_IR_Radii      , &
                                CloudCoeff%n_Temperatures  , &
-                               CloudCoeff%n_Densities     , &
+                               CloudCoeff%n_MW_Densities  , &
                                CloudCoeff%n_Legendre_Terms, &
                                CloudCoeff%n_Phase_Elements
+    CloudCoeff%n_IR_Densities = CloudCoeff%n_MW_Densities
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
              TRIM(Filename), io_stat
@@ -245,7 +246,7 @@ CONTAINS
     IF ( PRESENT(n_IR_Frequencies) ) n_IR_Frequencies = CloudCoeff%n_IR_Frequencies
     IF ( PRESENT(n_IR_Radii      ) ) n_IR_Radii       = CloudCoeff%n_IR_Radii      
     IF ( PRESENT(n_Temperatures  ) ) n_Temperatures   = CloudCoeff%n_Temperatures  
-    IF ( PRESENT(n_Densities     ) ) n_Densities      = CloudCoeff%n_Densities     
+    IF ( PRESENT(n_Densities     ) ) n_Densities      = CloudCoeff%n_MW_Densities     
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = CloudCoeff%n_Legendre_Terms
     IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = CloudCoeff%n_Phase_Elements
     IF ( PRESENT(Release         ) ) Release          = CloudCoeff%Release     
@@ -381,21 +382,26 @@ CONTAINS
                                dummy%n_IR_Frequencies, &
                                dummy%n_IR_Radii      , &
                                dummy%n_Temperatures  , &
-                               dummy%n_Densities     , &
+                               dummy%n_MW_Densities  , &
                                dummy%n_Legendre_Terms, &
                                dummy%n_Phase_Elements
+    ! IR used to start from (0:3) but that changed                            
+    dummy%n_IR_Densities = dummy%n_MW_Densities + 1 
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
+    
+    
     ! ...Allocate the object
     CALL CloudCoeff_Create( CloudCoeff, &
                             dummy%n_MW_Frequencies, &
                             dummy%n_MW_Radii      , &
+                            dummy%n_MW_Densities  , &
                             dummy%n_IR_Frequencies, &
                             dummy%n_IR_Radii      , &
+                            dummy%n_IR_Densities  , &
                             dummy%n_Temperatures  , &
-                            dummy%n_Densities     , &
                             dummy%n_Legendre_Terms, &
                             dummy%n_Phase_Elements  )
     IF ( .NOT. CloudCoeff_Associated( CloudCoeff ) ) THEN
@@ -408,7 +414,9 @@ CONTAINS
                                CloudCoeff%Reff_MW     , &
                                CloudCoeff%Reff_IR     , &
                                CloudCoeff%Temperature , &
-                               CloudCoeff%Density
+                               CloudCoeff%Density_MW
+    ! This is not used anywhere so just to set the values
+    CloudCoeff%Density_IR = 10                           
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimension vector data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
@@ -600,7 +608,7 @@ CONTAINS
                                 CloudCoeff%n_IR_Frequencies, &
                                 CloudCoeff%n_IR_Radii      , &
                                 CloudCoeff%n_Temperatures  , &
-                                CloudCoeff%n_Densities     , &
+                                CloudCoeff%n_MW_Densities     , &
                                 CloudCoeff%n_Legendre_Terms, &
                                 CloudCoeff%n_Phase_Elements
     IF ( io_stat /= 0 ) THEN
@@ -613,7 +621,7 @@ CONTAINS
                                 CloudCoeff%Reff_MW     , &
                                 CloudCoeff%Reff_IR     , &
                                 CloudCoeff%Temperature , &
-                                CloudCoeff%Density
+                                CloudCoeff%Density_MW
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing dimension vector data. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN

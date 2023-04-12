@@ -11,7 +11,7 @@
 !
 
 ! Aerosol-Index mapping:
-!  --- GOCART ---
+!  --- CRTM ---
 !  1 = Dust
 !  2 = Sea salt-SSAM
 !  3 = Sea salt-SSCM1
@@ -29,7 +29,18 @@
 !  6 = Water
 !  7 = Insoluble
 !  8 = dust-like
-
+!  --- GOCART-GEOS5 ---
+!  1, 2, 3, 4, 5  = Dust 1, 2, 3, 4, 5
+!  6, 7, 8, 9, 10 = Sea salt 1, 2, 3, 4, 5
+!  11, 12 = Organic carbon 1, 2
+!  13, 14 = Black carbon 1, 2
+!  15, 16 = Sulfate 1, 2
+!  17, 18, 19 = Nitrate 1, 2, 3
+!  --- NAAPS ---
+!  1 = Dust
+!  2 = Smoke
+!  3 = Sea Salt
+!  4 = Anthropogenic and Biogenic Fine Particles
 
 PROGRAM check_crtm
 
@@ -52,10 +63,6 @@ PROGRAM check_crtm
   ! ============================================================================
   ! STEP 2. **** SET UP SOME PARAMETERS FOR THE CRTM RUN ****
   !
-  ! Format of aerosol/cloud coefficient
-  !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
-!  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
-
   ! Directory location of coefficients
 #ifdef LITTLE_ENDIAN
   CHARACTER(*), PARAMETER :: ENDIAN_TYPE='little_endian'
@@ -66,12 +73,14 @@ PROGRAM check_crtm
   CHARACTER(*), PARAMETER :: NC_COEFFICIENT_PATH='coefficients/netcdf/'
 
   ! Aerosol/Cloud coefficient format
-  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
-  !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
+  !CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
+  CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
 
   ! Aerosol/Cloud coefficient scheme
-  CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART'
+  CHARACTER(*), PARAMETER :: Aerosol_Model = 'CRTM'
   !CHARACTER(*), PARAMETER :: Aerosol_Model = 'CMAQ'
+  !CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART-GEOS5'
+  !CHARACTER(*), PARAMETER :: Aerosol_Model = 'NAAPS'
   CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM'
 
   ! Directory location of results for comparison [NOT USED YET]
@@ -102,6 +111,8 @@ PROGRAM check_crtm
   CHARACTER(256) :: AerosolCoeff_Format
   CHARACTER(256) :: CloudCoeff_File
   CHARACTER(256) :: CloudCoeff_Format
+  CHARACTER(256) :: Aerosol_Scheme
+  CHARACTER(256) :: Cloud_Scheme
   INTEGER :: err_stat, alloc_stat
   INTEGER :: n_channels
   INTEGER :: l, m, n, nc
@@ -143,52 +154,31 @@ PROGRAM check_crtm
   !
   ! 4a. Initialise all the sensors at once
   ! --------------------------------------
-  !...Aerosol and cloud coefficient information
-
+  ! ... Cloud coefficient information
+  IF ( Cloud_Model /= 'CRTM' ) THEN
+      Cloud_Scheme = Cloud_Model//'.'
+  ELSE
+      Cloud_Scheme = ' '
+  END IF
+  ! ... Aerosol coefficient information
+  IF ( Aerosol_Model /= 'CRTM' ) THEN
+      Aerosol_Scheme = Aerosol_Model//'.'
+  ELSE
+      Aerosol_Scheme = ' '
+  END IF
+  ! ... Coefficient table format
   IF ( Coeff_Format == 'Binary' ) THEN
     AerosolCoeff_Format = 'Binary'
-    AerosolCoeff_File   = 'AerosolCoeff.bin'
+    AerosolCoeff_File   = 'AerosolCoeff.'//TRIM(Aerosol_Scheme)//'bin'
     CloudCoeff_Format   = 'Binary'
-    CloudCoeff_File     = 'CloudCoeff.bin'
-  ! if netCDF I/O
+    CloudCoeff_File     = 'CloudCoeff.'//TRIM(Cloud_Scheme)//'bin'
   ELSE IF ( Coeff_Format == 'netCDF' ) THEN
     AerosolCoeff_Format = 'netCDF'
-    AerosolCoeff_File   = 'AerosolCoeff.nc4'
+    AerosolCoeff_File   = 'AerosolCoeff.'//TRIM(Aerosol_Scheme)//'nc4'
     CloudCoeff_Format   = 'netCDF'
-    CloudCoeff_File     = 'CloudCoeff.nc4'
-  ELSE
-    message = 'Aerosol/Cloud coefficient format is not supported'
-    CALL Display_Message( PROGRAM_NAME, message, FAILURE )
-    STOP
+    CloudCoeff_File     = 'CloudCoeff.'//TRIM(Cloud_Scheme)//'nc4'
   END IF
-
-  !.....Aerosol
-  IF ( Aerosol_Model == 'GOCART' ) THEN
-    IF ( Coeff_Format == 'Binary' ) THEN
-      AerosolCoeff_Format = 'Binary'
-      AerosolCoeff_File   = 'AerosolCoeff.bin'
-    ELSE IF ( Coeff_Format == 'netCDF' ) THEN
-      AerosolCoeff_Format = 'netCDF'
-      AerosolCoeff_File   = 'AerosolCoeff.nc4'
-    ELSE
-      message = 'Aerosol coefficient format is not supported'
-      CALL Display_Message( PROGRAM_NAME, message, FAILURE )
-      STOP
-    END IF
-  ELSEIF ( Aerosol_Model == 'CMAQ' ) THEN
-    IF ( Coeff_Format == 'Binary' ) THEN
-      AerosolCoeff_Format = 'Binary'
-      AerosolCoeff_File   = 'AerosolCoeff.CMAQ.bin'
-    ELSE IF ( Coeff_Format == 'netCDF' ) THEN
-      AerosolCoeff_Format = 'netCDF'
-      AerosolCoeff_File   = 'AerosolCoeff.CMAQ.nc4'
-    ELSE
-      message = 'Aerosol coefficient format is not supported'
-      CALL Display_Message( PROGRAM_NAME, message, FAILURE )
-      STOP
-    END IF
-  END IF
-
+  
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   err_stat = CRTM_Init( SENSOR_ID, &
                         chinfo, &
@@ -318,8 +308,13 @@ PROGRAM check_crtm
     ! 7b. Inintialize the K-matrix INPUT so
     !     that the results are dTb/dx
     ! -------------------------------------
+    CALL CRTM_RTSolution_Create( rts_K, N_LAYERS ) ! This is necessary for Reflectivity
     rts_K%Radiance               = ZERO
     rts_K%Brightness_Temperature = ONE
+    DO m = 1, N_LAYERS
+       rts_K%Reflectivity(m) = ZERO
+       rts_K%Reflectivity_Attenuated(m) = ZERO
+    END DO
     ! ==========================================================================
 
     ! ==========================================================================
@@ -487,6 +482,20 @@ CONTAINS
       259.358_fp, 261.010_fp, 262.779_fp, 264.702_fp, 266.711_fp, 268.863_fp, 271.103_fp, 272.793_fp, &
       273.356_fp, 273.356_fp, 273.356_fp, 273.356_fp/)
 
+    atm(1)%Relative_Humidity = &
+    (/0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp/)
+
     atm(1)%Absorber(:,1) = &
     (/4.187E-03_fp,4.401E-03_fp,4.250E-03_fp,3.688E-03_fp,3.516E-03_fp,3.739E-03_fp,3.694E-03_fp,3.449E-03_fp, &
       3.228E-03_fp,3.212E-03_fp,3.245E-03_fp,3.067E-03_fp,2.886E-03_fp,2.796E-03_fp,2.704E-03_fp,2.617E-03_fp, &
@@ -539,7 +548,7 @@ CONTAINS
     !   Dust, Sulphate, and Sea Salt SSCM3
     Load_Aerosol_Data_1: IF ( atm(1)%n_Aerosols > 0 ) THEN
 
-      atm(1)%Aerosol(1)%Type = 1 ! dust (GOCART and CMAQ)
+      atm(1)%Aerosol(1)%Type = 1 ! dust (CRTM, CMAQ, GOCART-GEOS5, NAAPS)
       atm(1)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &
         0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -604,7 +613,7 @@ CONTAINS
       END IF
 
       IF ( atm(1)%n_Aerosols > 1 ) THEN
-        atm(1)%Aerosol(2)%Type = 8 ! sulfate (GOCART), dust-like (CMAQ)
+        atm(1)%Aerosol(2)%Type = 8 ! sulfate (CRTM), dust-like (CMAQ), Nitrate (GOCART-GEOS5)
         atm(1)%Aerosol(2)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -671,7 +680,8 @@ CONTAINS
 
 
       IF ( atm(1)%n_Aerosols > 2 ) THEN
-        atm(1)%Aerosol(3)%Type = 5 ! SEASALT_SSCM3_AEROSOL (GOCART), Sea salt (CMAQ)
+
+        atm(1)%Aerosol(3)%Type = 5 ! SEASALT_SSCM3_AEROSOL (CRTM), Sea salt (CMAQ), Black carbon (GOCART-GEOS5)
         atm(1)%Aerosol(3)%Effective_Radius = & ! microns
         (/7.600000E+00_fp, 7.600000E+00_fp, &
           7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, &
@@ -788,6 +798,20 @@ CONTAINS
       295.609_fp, 298.173_fp, 300.787_fp, 303.379_fp, 305.960_fp, 308.521_fp, 310.916_fp, 313.647_fp, &
       315.244_fp, 315.244_fp, 315.244_fp, 315.244_fp/)
 
+    atm(2)%Relative_Humidity = &
+    (/0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp,&
+      0.5_fp, 0.5_fp, 0.5_fp, 0.5_fp/)
+
     atm(2)%Absorber(:,1) = &
     (/3.887E-03_fp,3.593E-03_fp,3.055E-03_fp,2.856E-03_fp,2.921E-03_fp,2.555E-03_fp,2.392E-03_fp,2.605E-03_fp, &
       2.573E-03_fp,2.368E-03_fp,2.354E-03_fp,2.333E-03_fp,2.312E-03_fp,2.297E-03_fp,2.287E-03_fp,2.283E-03_fp, &
@@ -852,7 +876,8 @@ CONTAINS
     !   Sea Sat SSAM, Sea Salt SSCM1, and Sea Salt SSCM2
     Load_Aerosol_Data_2: IF ( atm(2)%n_Aerosols > 0 ) THEN
 
-      atm(2)%Aerosol(1)%Type = 2 ! SEASALT_SSAM_AEROSOL (GOCART), Soot (CMAQ)
+      atm(2)%Aerosol(1)%Type = 2 ! SEASALT_SSAM_AEROSOL (CRTM), Soot (CMAQ), 
+                                 ! DUST 2 (GOCART-GEOS5), Smoke (NAAPS)
       atm(2)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &
         0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -917,7 +942,8 @@ CONTAINS
       END IF
 
       IF ( atm(2)%n_Aerosols > 1 ) THEN
-        atm(2)%Aerosol(2)%Type = 3 ! SEASALT_SSCM1_AEROSOL (GOCART), Water soluble (CMAQ)
+        atm(2)%Aerosol(2)%Type = 3 ! SEASALT_SSCM1_AEROSOL (CRTM), Water soluble (CMAQ), 
+                                   ! DUST 3 (GOCART-GEOS5), Sea salt (NAAPS)
         atm(2)%Aerosol(2)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -983,7 +1009,8 @@ CONTAINS
       END IF
 
       IF ( atm(2)%n_Aerosols > 2 ) THEN
-        atm(2)%Aerosol(3)%Type = 4 ! SEASALT_SSCM2_AEROSOL (GOCART), Sulfate (CMAQ)
+        atm(2)%Aerosol(3)%Type = 4 ! SEASALT_SSCM2_AEROSOL (CRTM), Sulfate (CMAQ), 
+                                   ! Dust 4 (GOCART-GEOS5), Anthropogenic and Biogenic Fine Particles (NAAPS)
         atm(2)%Aerosol(3)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &

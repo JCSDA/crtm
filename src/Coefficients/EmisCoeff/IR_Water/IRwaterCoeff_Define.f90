@@ -8,7 +8,10 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 19-Aug-2011
 !                       paul.vandelst@noaa.gov
- 
+!      Modified by:     Cheng Dang, 18-Mar-2022
+!                       dangch@ucar.edu
+!                       Add temperature dimension
+
 MODULE IRwaterCoeff_Define
 
   ! -----------------
@@ -59,7 +62,7 @@ MODULE IRwaterCoeff_Define
   ! Module parameters
   ! -----------------
   ! Current valid release and version
-  INTEGER, PARAMETER :: IRWATERCOEFF_RELEASE = 3  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: IRWATERCOEFF_RELEASE = 4  ! This determines structure and file formats.
   INTEGER, PARAMETER :: IRWATERCOEFF_VERSION = 2  ! This is just the default data version.
   ! Close status for write errors
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
@@ -71,6 +74,7 @@ MODULE IRwaterCoeff_Define
   REAL(fp), PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! Message length
+  INTEGER,  PARAMETER :: SL =  80 ! String length
 
 
   ! ----------------------------------
@@ -83,16 +87,20 @@ MODULE IRwaterCoeff_Define
     ! Release and version information
     INTEGER(Long) :: Release = IRWATERCOEFF_RELEASE
     INTEGER(Long) :: Version = IRWATERCOEFF_VERSION
+    ! Surface classification name
+    CHARACTER(SL) :: Classification_Name = ''
     ! Dimensions
     INTEGER(Long) :: n_Angles      = 0   ! I dimension
     INTEGER(Long) :: n_Frequencies = 0   ! L dimension
     INTEGER(Long) :: n_Wind_Speeds = 0   ! N dimension
+    INTEGER(Long) :: n_Temperature = 0   ! T dimension
     ! Dimensional vectors
-    REAL(Double), ALLOCATABLE :: Angle(:)       ! I
-    REAL(Double), ALLOCATABLE :: Frequency(:)   ! L
-    REAL(Double), ALLOCATABLE :: Wind_Speed(:)  ! N
+    REAL(Double), ALLOCATABLE :: Angle(:)        ! I
+    REAL(Double), ALLOCATABLE :: Frequency(:)    ! L
+    REAL(Double), ALLOCATABLE :: Wind_Speed(:)   ! N
+    REAL(Double), ALLOCATABLE :: Temperature(:)  ! T
     ! Emissivity LUT data
-    REAL(Double), ALLOCATABLE :: Emissivity(:,:,:)  ! I x L x N
+    REAL(Double), ALLOCATABLE :: Emissivity(:,:,:,:)  ! I x L x N x T
     ! Transformed dimensional vectors
     REAL(Double), ALLOCATABLE :: Secant_Angle(:)  ! I
   END TYPE IRwaterCoeff_type
@@ -151,7 +159,7 @@ CONTAINS
     Status = self%Is_Allocated
   END FUNCTION IRwaterCoeff_Associated
 
-  
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -193,7 +201,8 @@ CONTAINS
 !       CALL IRwaterCoeff_Create( IRwaterCoeff , &
 !                                 n_Angles     , &
 !                                 n_Frequencies, &
-!                                 n_Wind_Speeds  )
+!                                 n_Wind_Speeds, &
+!                                 n_Temperature  )
 !
 ! OBJECTS:
 !       IRwaterCoeff:   IRwaterCoeff object structure.
@@ -224,6 +233,12 @@ CONTAINS
 !                       DIMENSION:  Conformable with the IRwaterCoeff object
 !                       ATTRIBUTES: INTENT(IN)
 !
+!       n_Temperature:  Number oftemperature dimension.
+!                       Must be > 0.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Conformable with the IRwaterCoeff object
+!                       ATTRIBUTES: INTENT(IN)
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -231,26 +246,29 @@ CONTAINS
     self         , &  ! Output
     n_Angles     , &  ! Input
     n_Frequencies, &  ! Input
-    n_Wind_Speeds  )  ! Input
+    n_Wind_Speeds, &  ! Input
+    n_Temperature  )  ! Input
     ! Arguments
     TYPE(IRwaterCoeff_type), INTENT(OUT) :: self
-    INTEGER                , INTENT(IN)  :: n_Angles             
-    INTEGER                , INTENT(IN)  :: n_Frequencies        
-    INTEGER                , INTENT(IN)  :: n_Wind_Speeds             
+    INTEGER                , INTENT(IN)  :: n_Angles
+    INTEGER                , INTENT(IN)  :: n_Frequencies
+    INTEGER                , INTENT(IN)  :: n_Wind_Speeds
+    INTEGER                , INTENT(IN)  :: n_Temperature
     ! Local variables
     INTEGER :: alloc_stat
 
     ! Check input
     IF ( n_Angles      < 1 .OR. &
          n_Frequencies < 1 .OR. &
-         n_Wind_Speeds < 1 ) RETURN
+         n_Wind_Speeds < 1 .OR. &
+         n_Temperature < 1) RETURN
 
-   
     ! Perform the allocation
     ALLOCATE( self%Angle( n_Angles ), &
               self%Frequency( n_Frequencies ), &
               self%Wind_Speed( n_Wind_Speeds ), &
-              self%Emissivity( n_Angles, n_Frequencies, n_Wind_Speeds ), &
+              self%Temperature( n_Temperature ), &
+              self%Emissivity( n_Angles, n_Frequencies, n_Wind_Speeds, n_Temperature), &
               self%Secant_Angle( n_Angles ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -258,13 +276,15 @@ CONTAINS
 
     ! Initialise
     ! ...Dimensions
-    self%n_Angles      = n_Angles     
+    self%n_Angles      = n_Angles
     self%n_Frequencies = n_Frequencies
     self%n_Wind_Speeds = n_Wind_Speeds
+    self%n_Temperature = n_Temperature
     ! ...Arrays
     self%Angle        = ZERO
     self%Frequency    = ZERO
     self%Wind_Speed   = ZERO
+    self%Temperature  = ZERO
     self%Emissivity   = ZERO
     self%Secant_Angle = ZERO
 
@@ -298,29 +318,37 @@ CONTAINS
 
   SUBROUTINE IRwaterCoeff_Inspect( self )
     TYPE(IRwaterCoeff_type), INTENT(IN) :: self
-    INTEGER :: i2, i3
+    INTEGER :: i2, i3, i4
     WRITE(*,'(1x,"IRwaterCoeff OBJECT")')
     ! Release/version info
     WRITE(*,'(3x,"Release.Version :",1x,i0,".",i0)') self%Release, self%Version
+    ! Surface classification name
+    WRITE(*,'(3x,"Classification_Name :",1x,a)') TRIM(self%Classification_Name)
     ! Dimensions
-    WRITE(*,'(3x,"n_Angles        :",1x,i0)') self%n_Angles     
+    WRITE(*,'(3x,"n_Angles        :",1x,i0)') self%n_Angles
     WRITE(*,'(3x,"n_Frequencies   :",1x,i0)') self%n_Frequencies
     WRITE(*,'(3x,"n_Wind_Speeds   :",1x,i0)') self%n_Wind_Speeds
+    WRITE(*,'(3x,"n_Temperature   :",1x,i0)') self%n_Temperature
     IF ( .NOT. IRwaterCoeff_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Angle      :")')
-    WRITE(*,'(5(1x,es22.15,:))') self%Angle     
+    WRITE(*,'(5(1x,es22.15,:))') self%Angle
     WRITE(*,'(3x,"Frequency  :")')
-    WRITE(*,'(5(1x,es22.15,:))') self%Frequency 
+    WRITE(*,'(5(1x,es22.15,:))') self%Frequency
     WRITE(*,'(3x,"Wind_Speed :")')
     WRITE(*,'(5(1x,es22.15,:))') self%Wind_Speed
+    WRITE(*,'(3x,"Temperature :")')
+    WRITE(*,'(5(1x,es22.15,:))') self%Temperature
     ! Emissivity array
     WRITE(*,'(3x,"Emissivity :")')
-    DO i3 = 1, self%n_Wind_Speeds
-      WRITE(*,'(5x,"WIND_SPEED :",es22.15)') self%Wind_Speed(i3)
-      DO i2 = 1, self%n_Frequencies
-        WRITE(*,'(5x,"FREQUENCY  :",es22.15)') self%Frequency(i2)      
-        WRITE(*,'(5(1x,es22.15,:))') self%Emissivity(:,i2,i3)
+    DO i4 = 1, self%n_Temperature
+      WRITE(*,'(5x,"TEMPERATURE :",es22.15)') self%Temperature(i4)
+      DO i3 = 1, self%n_Wind_Speeds
+        WRITE(*,'(5x,"WIND_SPEED :",es22.15)') self%Wind_Speed(i3)
+        DO i2 = 1, self%n_Frequencies
+          WRITE(*,'(5x,"FREQUENCY  :",es22.15)') self%Frequency(i2)
+          WRITE(*,'(5(1x,es22.15,:))') self%Emissivity(:,i2,i3,i4)
+        END DO
       END DO
     END DO
   END SUBROUTINE IRwaterCoeff_Inspect
@@ -435,23 +463,28 @@ CONTAINS
 
     ! Write the required data to the local string
     WRITE( Long_String, &
-           '( a,1x,"IRwaterCoeff RELEASE.VERSION: ", i2, ".", i2.2, 2x, &
+           '( a,1x,"IRwaterCoeff RELEASE.VERSION: ", i2, ".", i2.2,a,3x, &
+              &"CLASSIFICATION: ",a,",",2x,&
               &"N_ANGLES=",i3,2x,&
               &"N_FREQUENCIES=",i5,2x,&
-              &"N_WIND_SPEEDS=",i3 )' ) &
+              &"N_WIND_SPEEDS=",i3,2x,&
+              &"N_TEMPERATURE=",i3 )' ) &
            ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
            self%Release, self%Version, &
+           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+           TRIM(self%Classification_Name), &
            self%n_Angles, &
            self%n_Frequencies, &
-           self%n_Wind_Speeds
-                       
+           self%n_Wind_Speeds, &
+           self%n_Temperature
+
     ! Trim the output based on the
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE IRwaterCoeff_Info
- 
- 
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -467,6 +500,7 @@ CONTAINS
 !                        n_Angles      = n_Angles     , &
 !                        n_Frequencies = n_Frequencies, &
 !                        n_Wind_Speeds = n_Wind_Speeds, &
+!                        n_Temperature = n_Temperature, &
 !                        Release       = Release      , &
 !                        Version       = Version      , &
 !                        Title         = Title        , &
@@ -497,6 +531,13 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       n_Wind_Speeds:      Number of wind speeds for which there are
+!                           emissivity data.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       n_Temperature:      Number of temperature for which there are
 !                           emissivity data.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
@@ -557,6 +598,7 @@ CONTAINS
     n_Angles     , &  ! Optional output
     n_Frequencies, &  ! Optional output
     n_Wind_Speeds, &  ! Optional output
+    n_Temperature, &  ! Optional output
     Release      , &  ! Optional output
     Version      , &  ! Optional output
     Title        , &  ! Optional output
@@ -565,14 +607,15 @@ CONTAINS
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Angles     
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Angles
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Frequencies
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Wind_Speeds
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Temperature
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -584,7 +627,7 @@ CONTAINS
     INTEGER :: fid
     TYPE(IRwaterCoeff_type) :: IRwaterCoeff
 
- 
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check that the file exists
@@ -616,7 +659,8 @@ CONTAINS
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       IRwaterCoeff%n_Angles     , &
       IRwaterCoeff%n_Frequencies, &
-      IRwaterCoeff%n_Wind_Speeds
+      IRwaterCoeff%n_Wind_Speeds, &
+      IRwaterCoeff%n_Temperature
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimension values from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
@@ -644,14 +688,15 @@ CONTAINS
 
 
     ! Assign the return arguments
-    IF ( PRESENT(n_Angles     ) ) n_Angles      = IRwaterCoeff%n_Angles     
+    IF ( PRESENT(n_Angles     ) ) n_Angles      = IRwaterCoeff%n_Angles
     IF ( PRESENT(n_Frequencies) ) n_Frequencies = IRwaterCoeff%n_Frequencies
-    IF ( PRESENT(n_Wind_Speeds) ) n_Wind_Speeds = IRwaterCoeff%n_Wind_Speeds    
+    IF ( PRESENT(n_Wind_Speeds) ) n_Wind_Speeds = IRwaterCoeff%n_Wind_Speeds
+    IF ( PRESENT(n_Temperature) ) n_Temperature = IRwaterCoeff%n_Temperature
     IF ( PRESENT(Release      ) ) Release       = IRwaterCoeff%Release
     IF ( PRESENT(Version      ) ) Version       = IRwaterCoeff%Version
-    
+
   CONTAINS
-  
+
     SUBROUTINE Inquire_CleanUp()
       ! Close file if necessary
       IF ( File_Open(fid) ) THEN
@@ -663,7 +708,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
-    
+
   END FUNCTION IRwaterCoeff_InquireFile
 
 
@@ -788,7 +833,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     TYPE(IRwaterCoeff_type) :: dummy
-    
+
 
     ! Setup
     err_stat = SUCCESS
@@ -803,7 +848,7 @@ CONTAINS
       IF ( Debug ) noisy = .TRUE.
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( Filename ) ) THEN
       ! ...Inquire for the logical unit number
@@ -846,7 +891,8 @@ CONTAINS
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       dummy%n_Angles     , &
       dummy%n_Frequencies, &
-      dummy%n_Wind_Speeds
+      dummy%n_Wind_Speeds, &
+      dummy%n_Temperature
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimension values from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
@@ -854,17 +900,18 @@ CONTAINS
     ! ...Create the return object
     CALL IRwaterCoeff_Create( &
            IRwaterCoeff       , &
-           dummy%n_Angles     , &        
-           dummy%n_Frequencies, &        
-           dummy%n_Wind_Speeds  )
+           dummy%n_Angles     , &
+           dummy%n_Frequencies, &
+           dummy%n_Wind_Speeds, &
+           dummy%n_Temperature  )
     IF ( .NOT. IRwaterCoeff_Associated( IRwaterCoeff ) ) THEN
       msg = 'IRwaterCoeff object creation failed.'
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Explicitly assign the version number
     IRwaterCoeff%Version = dummy%Version
-    
-    
+
+
     ! Read the global attributes
     err_stat = ReadGAtts_Binary_File( &
                  fid, &
@@ -876,13 +923,21 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
+    ! ...Read the classification name
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      IRwaterCoeff%Classification_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading classification name - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
 
     ! Read the coefficient data
     ! ...Read the dimensional vectors
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      IRwaterCoeff%Angle     , &
-      IRwaterCoeff%Frequency , &
-      IRwaterCoeff%Wind_Speed
+      IRwaterCoeff%Angle      , &
+      IRwaterCoeff%Frequency  , &
+      IRwaterCoeff%Wind_Speed , &
+      IRwaterCoeff%Temperature
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimensional vectors - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
@@ -914,7 +969,7 @@ CONTAINS
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Read_CleanUp()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -1048,7 +1103,7 @@ CONTAINS
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    
+
 
     ! Setup
     err_stat = SUCCESS
@@ -1068,7 +1123,7 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( FileName ) ) THEN
       ! ...Inquire for the logical unit number
@@ -1102,7 +1157,8 @@ CONTAINS
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       IRwaterCoeff%n_Angles     , &
       IRwaterCoeff%n_Frequencies, &
-      IRwaterCoeff%n_Wind_Speeds
+      IRwaterCoeff%n_Wind_Speeds, &
+      IRwaterCoeff%n_Temperature
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing dimension values to '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
@@ -1121,13 +1177,21 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
+    ! Write the surface classification name
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      IRwaterCoeff%Classification_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing classification name - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
 
     ! Write the coefficient data
     ! ...Write the dimensional vectors
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       IRwaterCoeff%Angle     , &
       IRwaterCoeff%Frequency , &
-      IRwaterCoeff%Wind_Speed
+      IRwaterCoeff%Wind_Speed , &
+      IRwaterCoeff%Temperature
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing dimensional vectors - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
@@ -1140,7 +1204,7 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-    
+
     ! Close the file
     IF ( close_file ) THEN
       CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -1158,7 +1222,7 @@ CONTAINS
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Write_CleanUp()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, STATUS=WRITE_ERROR_STATUS, IOSTAT=io_stat, IOMSG=io_msg )
@@ -1219,7 +1283,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-   
+
     ! Check the object association status
     IF ( (.NOT. IRwaterCoeff_Associated(x)) .OR. &
          (.NOT. IRwaterCoeff_Associated(y))      ) RETURN
@@ -1229,17 +1293,21 @@ CONTAINS
     ! ...Release/version info
     IF ( (x%Release /= y%Release) .OR. &
          (x%Version /= y%Version) ) RETURN
+    ! ...Classification name
+    IF ( (x%Classification_Name /= y%Classification_Name) ) RETURN
     ! ...Dimensions
     IF ( (x%n_Angles      /= y%n_Angles      ) .OR. &
          (x%n_Frequencies /= y%n_Frequencies ) .OR. &
-         (x%n_Wind_Speeds /= y%n_Wind_Speeds ) ) RETURN
+         (x%n_Wind_Speeds /= y%n_Wind_Speeds ) .OR. &
+         (x%n_Temperature /= y%n_Temperature ) ) RETURN
     ! ...Arrays
-    IF ( ALL(x%Angle      .EqualTo. y%Angle      ) .AND. &
-         ALL(x%Frequency  .EqualTo. y%Frequency  ) .AND. &
-         ALL(x%Wind_Speed .EqualTo. y%Wind_Speed ) .AND. &
-         ALL(x%Emissivity .EqualTo. y%Emissivity ) ) &
+    IF ( ALL(x%Angle       .EqualTo. y%Angle      ) .AND. &
+         ALL(x%Frequency   .EqualTo. y%Frequency  ) .AND. &
+         ALL(x%Wind_Speed  .EqualTo. y%Wind_Speed ) .AND. &
+         ALL(x%Temperature .EqualTo. y%Temperature ) .AND. &
+         ALL(x%Emissivity  .EqualTo. y%Emissivity ) ) &
       is_equal = .TRUE.
-    
+
   END FUNCTION IRwaterCoeff_Equal
 
 END MODULE IRwaterCoeff_Define

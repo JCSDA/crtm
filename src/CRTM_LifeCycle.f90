@@ -6,9 +6,26 @@
 !
 ! Written by:     Paul van Delst, 21-May-2004
 !                 paul.vandelst@noaa.gov
-! Modified by:    Cheng Dang, 1-Aug-2020
-!                 dangch@ucar.edu
-!                 Add optional arguments for aerosol/cloud scheme/file/format
+!
+!
+! Record of Revisions:
+! ====================
+!
+!
+! Date:           Name:                    Description:
+! =====           =====                    ============
+!
+! 2020-08-01      Cheng Dang               Add optional arguments for
+!                                          aerosol/cloud scheme/file/format.
+!
+! 2021-07-26      Patrick Stegmann         Add optional format input for
+!                                          TauCoeff files.
+!
+! 2022-03-09      Cheng Dang               Add optional format input for
+!                                          EmisCoeff files.
+!
+! 2022-05-27     Cheng Dang                Add optional input file for
+!                                          Snow Emissivity files.
 
 MODULE CRTM_LifeCycle
 
@@ -102,6 +119,8 @@ CONTAINS
 !                                 Cloud_Model         = Cloud_Model         , &
 !                                 CloudCoeff_Format   = CloudCoeff_Format   , &
 !                                 CloudCoeff_File     = CloudCoeff_File     , &
+!                                 SpcCoeff_Format     = SpcCoeff_Format     , &
+!                                 TauCoeff_Format     = TauCoeff_Format     , &
 !                                 Load_CloudCoeff     = Load_CloudCoeff     , &
 !                                 Load_AerosolCoeff   = Load_AerosolCoeff   , &
 !                                 IRwaterCoeff_File   = IRwaterCoeff_File   , &
@@ -113,6 +132,13 @@ CONTAINS
 !                                 VISsnowCoeff_File   = VISsnowCoeff_File   , &
 !                                 VISiceCoeff_File    = VISiceCoeff_File    , &
 !                                 MWwaterCoeff_File   = MWwaterCoeff_File   , &
+!                                 IRwaterCoeff_Format = IRwaterCoeff_Format , &
+!                                 IRlandCoeff_Format  = IRlandCoeff_Format  , &
+!                                 IRiceCoeff_Format   = IRiceCoeff_Format   , &
+!                                 VISwaterCoeff_Format= VISwaterCoeff_Format, &
+!                                 VISlandCoeff_Format = VISlandCoeff_Format , &
+!                                 VISsnowCoeff_Format = VISsnowCoeff_Format , &
+!                                 VISiceCoeff_Format  = VISiceCoeff_Format  , &
 !                                 File_Path           = File_Path           , &
 !                                 NC_File_Path        = NC_File_Path        , &
 !                                 Quiet               = Quiet               , &
@@ -146,8 +172,10 @@ CONTAINS
 ! OPTIONAL INPUTS:
 !       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
 !                          Available aerosol scheme:
-!                          - GOCART  [DEFAULT]
+!                          - CRTM  [DEFAULT]
 !                          - CMAQ
+!                          - GOCART-GEOS5
+!                          - NAAPS
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -165,12 +193,18 @@ CONTAINS
 !       AerosolCoeff_File:  Name of the data file containing the aerosol optical
 !                           properties data for scattering calculations.
 !                           Available datafiles:
-!                           GOCART:
+!                           CRTM:
 !                           - AerosolCoeff.bin      [DEFAULT, Binary]
 !                           - AerosolCoeff.nc/nc4   [netCDF-Classic/4]
 !                           CMAQ:
 !                           - AerosolCoeff.CMAQ.bin      [Binary]
 !                           - AerosolCoeff.CMAQ.nc/nc4   [netCDF-Classic/4]
+!                           GOCART-GEOS5:
+!                           - AerosolCoeff.GOCART-GEOS5.bin      [Binary]
+!                           - AerosolCoeff.GOCART-GEOS5.nc/nc4   [netCDF-Classic/4]
+!                           NAAPS:
+!                           - AerosolCoeff.NAAPS.bin      [Binary]
+!                           - AerosolCoeff.NAAPS.nc/nc4   [netCDF-Classic/4]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -202,6 +236,24 @@ CONTAINS
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       SpcCoeff_Format:     Format of the CRTM spectral coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       TauCoeff_Format:     Format of the CRTM transmittance coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Load_CloudCoeff:    Set this logical argument for not loading the CloudCoeff data
 !                           to save memory space under the clear conditions
@@ -262,6 +314,7 @@ CONTAINS
 !                           - NPOESS.IRsnow.EmisCoeff.bin  [DEFAULT]
 !                           - IGBP.IRsnow.EmisCoeff.bin
 !                           - USGS.IRsnow.EmisCoeff.bin
+!                           - Nalli.IRsnow.EmisCoeff.bin
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -321,6 +374,78 @@ CONTAINS
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!     IRwaterCoeff_Format:   Format of the CRTM IRwater coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!      IRlandCoeff_Format:   Format of the CRTM IRland coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!      IRsnowCoeff_Format:   Format of the CRTM IRsnow coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       IRiceCoeff_Format:   Format of the CRTM IRice coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!    VISwaterCoeff_Format:   Format of the CRTM VISwater coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!     VISlandCoeff_Format:   Format of the CRTM VISland coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!     VISsnowCoeff_Format:   Format of the CRTM VISsnow coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!     VISiceCoeff_Format:   Format of the CRTM VISice coefficients
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       File_Path:          Character string specifying a file path for the
 !                           input data files in Binary format. If not specified,
@@ -401,6 +526,8 @@ CONTAINS
     Cloud_Model         , &  ! Optional input
     CloudCoeff_Format   , &  ! Optional input
     CloudCoeff_File     , &  ! Optional input
+    SpcCoeff_Format     , &  ! Optional input
+    TauCoeff_Format     , &  ! Optional input
     EmisCoeff_File      , &  ! Optional input  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
     IRwaterCoeff_File   , &  ! Optional input
     IRlandCoeff_File    , &  ! Optional input
@@ -411,6 +538,15 @@ CONTAINS
     VISsnowCoeff_File   , &  ! Optional input
     VISiceCoeff_File    , &  ! Optional input
     MWwaterCoeff_File   , &  ! Optional input
+    IRwaterCoeff_Format , &  ! Optional input
+    IRlandCoeff_Format  , &  ! Optional input
+    IRsnowCoeff_Format  , &  ! Optional input
+    IRiceCoeff_Format   , &  ! Optional input
+    VISwaterCoeff_Format, &  ! Optional input
+    VISlandCoeff_Format , &  ! Optional input
+    VISsnowCoeff_Format , &  ! Optional input
+    VISiceCoeff_Format  , &  ! Optional input
+    IRsnow_Model        , &  ! Optional input
     File_Path           , &  ! Optional input
     NC_File_Path        , &  ! Optional input
     Load_CloudCoeff     , &  ! Optional input
@@ -428,6 +564,8 @@ CONTAINS
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: Cloud_Model
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_Format
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: SpcCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: TauCoeff_Format
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File
@@ -438,6 +576,15 @@ CONTAINS
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISsnowCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISiceCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: MWwaterCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRwaterCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRsnowCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRiceCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISwaterCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISlandCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISsnowCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISiceCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRsnow_Model
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: NC_File_Path
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff
@@ -457,8 +604,11 @@ CONTAINS
     CHARACTER(SL) :: Default_Cloud_Model
     CHARACTER(SL) :: Default_CloudCoeff_Format
     CHARACTER(SL) :: Default_CloudCoeff_File
+    CHARACTER(SL) :: Default_SpcCoeff_Format
+    CHARACTER(SL) :: Default_TauCoeff_Format
     CHARACTER(SL) :: Default_IRwaterCoeff_File
     CHARACTER(SL) :: Default_IRlandCoeff_File
+    CHARACTER(SL) :: Default_IRsnow_Model
     CHARACTER(SL) :: Default_IRsnowCoeff_File
     CHARACTER(SL) :: Default_IRiceCoeff_File
     CHARACTER(SL) :: Default_VISwaterCoeff_File
@@ -466,12 +616,22 @@ CONTAINS
     CHARACTER(SL) :: Default_VISsnowCoeff_File
     CHARACTER(SL) :: Default_VISiceCoeff_File
     CHARACTER(SL) :: Default_MWwaterCoeff_File
+    CHARACTER(SL) :: Default_IRwaterCoeff_Format
+    CHARACTER(SL) :: Default_IRlandCoeff_Format
+    CHARACTER(SL) :: Default_IRsnowCoeff_Format
+    CHARACTER(SL) :: Default_IRsnowCoeff_Model
+    CHARACTER(SL) :: Default_IRiceCoeff_Format
+    CHARACTER(SL) :: Default_VISwaterCoeff_Format
+    CHARACTER(SL) :: Default_VISlandCoeff_Format
+    CHARACTER(SL) :: Default_VISsnowCoeff_Format
+    CHARACTER(SL) :: Default_VISiceCoeff_Format
+    CHARACTER(SL) :: Default_File_Path
 
 
     INTEGER :: l, n, n_Sensors
     LOGICAL :: Local_Load_CloudCoeff
     LOGICAL :: Local_Load_AerosolCoeff
-
+    LOGICAL :: netCDF, isSEcategory
     ! ******
     ! TEMPORARY UNTIL LOAD ROUTINE INTERFACES HAVE BEEN MODIFIED
     INTEGER :: iQuiet
@@ -514,15 +674,16 @@ CONTAINS
 
 
     ! Specify sensor-independent coefficient filenames
+    ! ...Default File_Path
+    Default_File_Path = ''
     ! ...Default filenames
-    Default_Aerosol_Model       = 'GOCART'
-    Default_AerosolCoeff_Format = 'Binary'
+    Default_Aerosol_Model       = 'CRTM'
     Default_AerosolCoeff_File   = 'AerosolCoeff.bin'
     Default_Cloud_Model         = 'CRTM'
-    Default_CloudCoeff_Format   = 'Binary'
     Default_CloudCoeff_File     = 'CloudCoeff.bin'
     Default_IRwaterCoeff_File   = 'Nalli.IRwater.EmisCoeff.bin'
     Default_IRlandCoeff_File    = 'NPOESS.IRland.EmisCoeff.bin'
+    Default_IRsnow_Model        = 'SEcategory'
     Default_IRsnowCoeff_File    = 'NPOESS.IRsnow.EmisCoeff.bin'
     Default_IRiceCoeff_File     = 'NPOESS.IRice.EmisCoeff.bin'
     Default_VISwaterCoeff_File  = 'NPOESS.VISwater.EmisCoeff.bin'
@@ -530,12 +691,25 @@ CONTAINS
     Default_VISsnowCoeff_File   = 'NPOESS.VISsnow.EmisCoeff.bin'
     Default_VISiceCoeff_File    = 'NPOESS.VISice.EmisCoeff.bin'
     Default_MWwaterCoeff_File   = 'FASTEM6.MWwater.EmisCoeff.bin'
-    ! ...Were other filenames specified?
+    ! ... Default file formats
+    Default_AerosolCoeff_Format = 'Binary'
+    Default_CloudCoeff_Format   = 'Binary'
+    Default_SpcCoeff_Format     = 'Binary'
+    Default_TauCoeff_Format     = 'Binary'
+    Default_IRwaterCoeff_Format = 'Binary'
+    Default_IRlandCoeff_Format  = 'Binary'
+    Default_IRsnowCoeff_Format  = 'Binary'
+    Default_IRiceCoeff_Format   = 'Binary'
+    Default_VISwaterCoeff_Format= 'Binary'
+    Default_VISlandCoeff_Format = 'Binary'
+    Default_VISsnowCoeff_Format = 'Binary'
+    Default_VISiceCoeff_Format  = 'Binary'
+    ! ...Were coefficient models specified?
     IF ( PRESENT(Aerosol_Model       ) ) Default_Aerosol_Model       = TRIM(ADJUSTL(Aerosol_Model))
-    IF ( PRESENT(AerosolCoeff_Format ) ) Default_AerosolCoeff_Format = TRIM(ADJUSTL(AerosolCoeff_Format))
-    IF ( PRESENT(AerosolCoeff_File   ) ) Default_AerosolCoeff_File   = TRIM(ADJUSTL(AerosolCoeff_File))
     IF ( PRESENT(Cloud_Model         ) ) Default_Cloud_Model         = TRIM(ADJUSTL(Cloud_Model))
-    IF ( PRESENT(CloudCoeff_Format   ) ) Default_CloudCoeff_Format   = TRIM(ADJUSTL(CloudCoeff_Format))
+    IF ( PRESENT(IRsnow_Model        ) ) Default_IRsnow_Model        = TRIM(ADJUSTL(IRsnow_Model))
+    ! ...Were other filenames specified?
+    IF ( PRESENT(AerosolCoeff_File   ) ) Default_AerosolCoeff_File   = TRIM(ADJUSTL(AerosolCoeff_File))
     IF ( PRESENT(CloudCoeff_File     ) ) Default_CloudCoeff_File     = TRIM(ADJUSTL(CloudCoeff_File))
     IF ( PRESENT(IRwaterCoeff_File   ) ) Default_IRwaterCoeff_File   = TRIM(ADJUSTL(IRwaterCoeff_File))
     IF ( PRESENT(IRlandCoeff_File    ) ) Default_IRlandCoeff_File    = TRIM(ADJUSTL(IRlandCoeff_File))
@@ -546,39 +720,34 @@ CONTAINS
     IF ( PRESENT(VISsnowCoeff_File   ) ) Default_VISsnowCoeff_File   = TRIM(ADJUSTL(VISsnowCoeff_File))
     IF ( PRESENT(VISiceCoeff_File    ) ) Default_VISiceCoeff_File    = TRIM(ADJUSTL(VISiceCoeff_File))
     IF ( PRESENT(MWwaterCoeff_File   ) ) Default_MWwaterCoeff_File   = TRIM(ADJUSTL(MWwaterCoeff_File))
+    ! ...Were data formats specificed?
+    IF ( PRESENT(AerosolCoeff_Format ) ) Default_AerosolCoeff_Format  = TRIM(ADJUSTL(AerosolCoeff_Format))
+    IF ( PRESENT(CloudCoeff_Format   ) ) Default_CloudCoeff_Format    = TRIM(ADJUSTL(CloudCoeff_Format))
+    IF ( PRESENT(SpcCoeff_Format     ) ) Default_SpcCoeff_Format      = TRIM(ADJUSTL(SpcCoeff_Format))
+    IF ( PRESENT(TauCoeff_Format     ) ) Default_TauCoeff_Format      = TRIM(ADJUSTL(TauCoeff_Format))
+    IF ( PRESENT(IRwaterCoeff_Format ) ) Default_IRwaterCoeff_Format  = TRIM(ADJUSTL(IRwaterCoeff_Format))
+    IF ( PRESENT(IRlandCoeff_Format  ) ) Default_IRlandCoeff_Format   = TRIM(ADJUSTL(IRlandCoeff_Format))
+    IF ( PRESENT(IRsnowCoeff_Format  ) ) Default_IRsnowCoeff_Format   = TRIM(ADJUSTL(IRsnowCoeff_Format))
+    IF ( PRESENT(IRiceCoeff_Format   ) ) Default_IRiceCoeff_Format    = TRIM(ADJUSTL(IRiceCoeff_Format))
+    IF ( PRESENT(VISwaterCoeff_Format) ) Default_VISwaterCoeff_Format = TRIM(ADJUSTL(VISwaterCoeff_Format))
+    IF ( PRESENT(VISlandCoeff_Format ) ) Default_VISlandCoeff_Format  = TRIM(ADJUSTL(VISlandCoeff_Format))
+    IF ( PRESENT(VISsnowCoeff_Format ) ) Default_VISsnowCoeff_Format  = TRIM(ADJUSTL(VISsnowCoeff_Format))
+    IF ( PRESENT(VISiceCoeff_Format  ) ) Default_VISiceCoeff_Format   = TRIM(ADJUSTL(VISiceCoeff_Format))
     ! ...Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
-      Default_IRwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRwaterCoeff_File)
-      Default_IRlandCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRlandCoeff_File)
-      Default_IRsnowCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRsnowCoeff_File)
-      Default_IRiceCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRiceCoeff_File)
-      Default_VISwaterCoeff_File = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISwaterCoeff_File)
-      Default_VISlandCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISlandCoeff_File)
-      Default_VISsnowCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISsnowCoeff_File)
-      Default_VISiceCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISiceCoeff_File)
       Default_MWwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_MWwaterCoeff_File)
-    END IF
-    ! ...Was aerosol or cloud lookup table in netCDF or Binary format?
-    IF ( PRESENT(AerosolCoeff_Format) .AND. AerosolCoeff_Format == 'netCDF' ) THEN
-      IF ( PRESENT(NC_File_Path) ) THEN
-        Default_AerosolCoeff_File  = TRIM(ADJUSTL(NC_File_Path)) // TRIM(Default_AerosolCoeff_File)
-      END IF
-    ELSE IF ( PRESENT(File_Path) ) THEN
-        Default_AerosolCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
-    END IF
-
-    IF ( PRESENT(CloudCoeff_Format) .AND. CloudCoeff_Format == 'netCDF' ) THEN
-      IF ( PRESENT(NC_File_Path) ) THEN
-        Default_CloudCoeff_File    = TRIM(ADJUSTL(NC_File_Path)) // TRIM(Default_CloudCoeff_File)
-      END IF
-    ELSE IF ( PRESENT(File_Path) ) THEN
-        Default_CloudCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
     END IF
 
     ! Load the spectral coefficients
+    netCDF = .FALSE.
+    IF (Default_SpcCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+    END IF
+    WRITE(*,*) "Loading "//TRIM(Default_SpcCoeff_Format)//" spectral coefficients."
     err_stat = CRTM_SpcCoeff_Load( &
                  Sensor_ID                            , &
                  File_Path         = File_Path        , &
+                 netCDF            = netCDF           , &
                  Quiet             = Quiet            , &
                  Process_ID        = Process_ID       , &
                  Output_Process_ID = Output_Process_ID  )
@@ -589,10 +758,16 @@ CONTAINS
 
 
     ! Load the transmittance model coefficients
+    netCDF = .FALSE.
+    IF (Default_TauCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+    END IF
+    WRITE(*,*) "Loading "//TRIM(Default_TauCoeff_Format)//" transmittance coefficients."
     err_stat = CRTM_Load_TauCoeff( &
                  Sensor_ID         = Sensor_ID        , &
                  File_Path         = File_Path        , &
                  Quiet             = iQuiet           , &  ! *** Use of iQuiet temporary
+                 netCDF            = netCDF           , &
                  Process_ID        = Process_ID       , &
                  Output_Process_ID = Output_Process_ID  )
     IF ( err_stat /= SUCCESS ) THEN
@@ -603,13 +778,20 @@ CONTAINS
 
     ! Load the cloud coefficients
     IF ( Local_Load_CloudCoeff ) THEN
-      WRITE(*, '("Load the cloud coefficients: ") ')
-      WRITE(*, '("...Cloud model: ", a) ') TRIM(Default_Cloud_Model)
-      WRITE(*, '("...CloudCoeff file: ", a) ') TRIM(Default_CloudCoeff_File)
+      IF ( Default_CloudCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      ! Default_CloudCoeff_File = TRIM(ADJUSTL(Default_File_Path)) // TRIM(Default_CloudCoeff_File)
+      WRITE(*, '("Loading cloud coefficients: ", a) ') TRIM(Default_CloudCoeff_File)
       err_stat = CRTM_CloudCoeff_Load( &
                    Default_Cloud_Model                  , &
-                   Default_CloudCoeff_Format            , &
                    Default_CloudCoeff_File              , &
+                   File_Path         = Default_File_Path, &
+                   netCDF            = netCDF           , &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -623,13 +805,20 @@ CONTAINS
 
     ! Load the aerosol coefficients
     IF ( Local_Load_AerosolCoeff ) THEN
-      WRITE(*, '("Load the aerosol coefficients: ") ')
-      WRITE(*, '("...Aerosol model: ", a) ') TRIM(Default_Aerosol_Model)
-      WRITE(*, '("...AerosolCoeff file: ", a) ') TRIM(Default_AerosolCoeff_File)
+      IF ( Default_AerosolCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      ! Default_AerosolCoeff_File = TRIM(ADJUSTL(Default_File_Path)) // TRIM(Default_AerosolCoeff_File)
+      WRITE(*, '("Loading aerosol coefficients: ", a) ') TRIM(Default_AerosolCoeff_File)
       err_stat = CRTM_AerosolCoeff_Load( &
                    Default_Aerosol_Model                , &
-                   Default_AerosolCoeff_Format          , &
                    Default_AerosolCoeff_File            , &
+                   File_Path         = Default_File_Path, &
+                   netCDF            = netCDF           , &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -645,8 +834,18 @@ CONTAINS
     ! ...Infrared
     Infrared_Sensor: IF ( ANY(SpcCoeff_IsInfraredSensor(SC)) ) THEN
       ! ...IR land
+      IF ( Default_IRlandCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading IR land emissivity coefficients: ", a) ') TRIM(Default_IRlandCoeff_File)
       err_stat = CRTM_IRlandCoeff_Load( &
                    Default_IRlandCoeff_File, &
+                   File_Path         = Default_File_Path, &
+                   netCDF            = netCDF           , &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -656,8 +855,18 @@ CONTAINS
         RETURN
       END IF
       ! ...IR Water
+      IF ( Default_IRwaterCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading IR water emissivity coefficients: ", a) ') TRIM(Default_IRwaterCoeff_File)
       err_stat = CRTM_IRwaterCoeff_Load( &
                    Default_IRwaterCoeff_File, &
+                   netCDF            = netCDF           , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -667,8 +876,24 @@ CONTAINS
         RETURN
       END IF
       ! ...IR snow
+      IF ( Default_IRsnowCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      IF (Default_IRsnow_Model == 'SEcategory') THEN
+        isSEcategory = .TRUE.
+      ELSE
+        isSEcategory = .FALSE.
+      END IF
+      WRITE(*, '("Loading IR snow emissivity coefficients: ", a) ')  TRIM(Default_IRsnowCoeff_File)
       err_stat = CRTM_IRsnowCoeff_Load( &
                    Default_IRsnowCoeff_File, &
+                   netCDF            = netCDF           , &
+                   isSEcategory      = isSEcategory     , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -678,8 +903,18 @@ CONTAINS
         RETURN
       END IF
       ! ...IR ice
+      IF ( Default_IRiceCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading IR ice emissivity coefficients: ", a) ') TRIM(Default_IRiceCoeff_File)
       err_stat = CRTM_IRiceCoeff_Load( &
                    Default_IRiceCoeff_File, &
+                   netCDF            = netCDF           , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -693,8 +928,18 @@ CONTAINS
     ! ...Visible
     Visible_Sensor: IF ( ANY(SpcCoeff_IsVisibleSensor(SC)) ) THEN
       ! ...VIS land
+      IF ( Default_VISlandCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading VIS land emissivity coefficients: ", a) ') TRIM(Default_VISlandCoeff_File)
       err_stat = CRTM_VISlandCoeff_Load( &
                    Default_VISlandCoeff_File, &
+                   netCDF            = netCDF           , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -704,8 +949,18 @@ CONTAINS
         RETURN
       END IF
       ! ...VIS water
+      IF ( Default_VISwaterCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading VIS water emissivity coefficients: ", a) ') TRIM(Default_VISwaterCoeff_File)
       err_stat = CRTM_VISwaterCoeff_Load( &
                    Default_VISwaterCoeff_File, &
+                   netCDF            = netCDF           , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -715,8 +970,18 @@ CONTAINS
         RETURN
       END IF
       ! ...VIS snow
+      IF ( Default_VISsnowCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading VIS snow emissivity coefficients: ", a) ') TRIM(Default_VISsnowCoeff_File)
       err_stat = CRTM_VISsnowCoeff_Load( &
                    Default_VISsnowCoeff_File, &
+                   netCDF            = netCDF           , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -726,8 +991,18 @@ CONTAINS
         RETURN
       END IF
       ! ...VIS ice
+      IF ( Default_VISiceCoeff_Format == 'netCDF' ) THEN
+        netCDF = .TRUE.
+        IF ( PRESENT(NC_File_Path) ) Default_File_Path = NC_File_Path
+      ELSE
+        netCDF = .FALSE.
+        IF ( PRESENT(File_Path) ) Default_File_Path = File_Path
+      END IF
+      WRITE(*, '("Loading VIS ice emissivity coefficients: ", a) ') TRIM(Default_VISiceCoeff_File)
       err_stat = CRTM_VISiceCoeff_Load( &
                    Default_VISiceCoeff_File, &
+                   netCDF            = netCDF           , &
+                   File_Path         = Default_File_Path, &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -739,6 +1014,7 @@ CONTAINS
     END IF Visible_Sensor
 
     ! ...Microwave
+    WRITE(*, '("Loading MW water emissivity coefficients: ", a) ') TRIM(Default_MWwaterCoeff_File)
     Microwave_Sensor: IF ( ANY(SpcCoeff_IsMicrowaveSensor(SC)) ) THEN
       ! ...MW water
       err_stat = CRTM_MWwaterCoeff_Load( &

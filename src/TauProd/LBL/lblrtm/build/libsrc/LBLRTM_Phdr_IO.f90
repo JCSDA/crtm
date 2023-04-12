@@ -38,13 +38,13 @@ MODULE LBLRTM_Phdr_IO
   ! Procedures
   PUBLIC :: LBLRTM_Phdr_Read
   PUBLIC :: LBLRTM_Phdr_Write
-  PUBLIC :: LBLRTM_Phdr_IOVersion
+  !PUBLIC :: LBLRTM_Phdr_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -350,9 +350,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Phdr_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Phdr_IOVersion
+  !SUBROUTINE LBLRTM_Phdr_IOVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Phdr_IOVersion
 
 END MODULE LBLRTM_Phdr_IO

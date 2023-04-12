@@ -76,9 +76,12 @@ include make.dependencies
 
 # Suffix rules
 .SUFFIXES:
-.SUFFIXES: .fpp .f90 .o
+.SUFFIXES: .fpp .f90 .F90 .o
 .fpp.o:
 	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $<
 
 .f90.o:
 	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $<
+
+.F90.o:
+	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $<

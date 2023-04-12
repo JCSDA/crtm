@@ -11,7 +11,9 @@
 !       Modified by     Yingtao Ma, 2020/6/11
 !                       yingtao.ma@noaa.gov
 !                       Implemented CMAQ aerosol
-!
+!       Modified by     Cheng Dang, 30-Mar-2022
+!                       dangch@ucar.edu
+!                       Add dimension n_RH_Radii
 
 MODULE AerosolCoeff_Binary_IO
 
@@ -115,6 +117,13 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
+!       n_RH_Radii:        The number of relative humidity entries in
+!                          the CRTM and CMAQ tables. Must be > 0.
+!                          UNITS:      N/A
+!                          TYPE:       INTEGER
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       n_Legendre_Terms:  The maximum number of Legendre polynomial
 !                          terms in the LUT. Can be = 0.
 !                          UNITS:      N/A
@@ -160,6 +169,7 @@ CONTAINS
     n_Sigma         , &  ! Optional output
     n_Types         , &  ! Optional output
     n_RH            , &  ! Optional output
+    n_RH_Radii      , &  ! Optional output
     n_Legendre_Terms, &  ! Optional output
     n_Phase_Elements, &  ! Optional output
     Release         , &  ! Optional output
@@ -173,6 +183,7 @@ CONTAINS
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH_Radii
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements
     INTEGER,      OPTIONAL, INTENT(OUT) :: Release
@@ -211,27 +222,25 @@ CONTAINS
     END IF
 
     ! Read the dimensions
-    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
-      READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
-                                 AerosolCoeff%n_Radii         , &
-                                 AerosolCoeff%n_Types         , &
-                                 AerosolCoeff%n_RH            , &
-                                 AerosolCoeff%n_Legendre_Terms, &
-                                 AerosolCoeff%n_Phase_Elements
-      AerosolCoeff%n_Sigma = 0
-    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
-      READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
-                                 AerosolCoeff%n_Radii         , &
-                                 AerosolCoeff%n_Sigma         , &
-                                 AerosolCoeff%n_Types         , &
-                                 AerosolCoeff%n_RH            , &
-                                 AerosolCoeff%n_Legendre_Terms, &
-                                 AerosolCoeff%n_Phase_Elements
-    ELSE
-      WRITE( msg,'("Invalid version of aerosol coefficient")' )
+    READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
+                               AerosolCoeff%n_Radii         , &
+                               AerosolCoeff%n_Sigma         , &
+                               AerosolCoeff%n_Types         , &
+                               AerosolCoeff%n_RH            , &
+                               AerosolCoeff%n_Legendre_Terms, &
+                               AerosolCoeff%n_Phase_Elements
+
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
+             TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
 
+    ! Read the dimension used for CRTM and CMAQ only
+    AerosolCoeff%n_RH_Radii = 1 ! dummy variable if not CRTM nor CMAQ tables
+    IF (Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ') THEN
+      READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_RH_Radii
+    END IF
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
              TRIM(Filename), io_stat
@@ -245,12 +254,13 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
-    ! Set the return arguments
+   ! Set the return arguments
     IF ( PRESENT(n_Wavelengths   ) ) n_Wavelengths    = AerosolCoeff%n_Wavelengths
     IF ( PRESENT(n_Radii         ) ) n_Radii          = AerosolCoeff%n_Radii
     IF ( PRESENT(n_Sigma         ) ) n_Sigma          = AerosolCoeff%n_Sigma
     IF ( PRESENT(n_Types         ) ) n_Types          = AerosolCoeff%n_Types
     IF ( PRESENT(n_RH            ) ) n_RH             = AerosolCoeff%n_RH
+    IF ( PRESENT(n_RH_Radii      ) ) n_RH_Radii       = AerosolCoeff%n_RH_Radii
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = AerosolCoeff%n_Legendre_Terms
     IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = AerosolCoeff%n_Phase_Elements
     IF ( PRESENT(Release         ) ) Release          = AerosolCoeff%Release
@@ -292,8 +302,10 @@ CONTAINS
 ! INPUTS:
 !       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
 !                          Available aerosol scheme:
-!                          - GOCART  [DEFAULT]
+!                          - CRTM  [DEFAULT]
 !                          - CMAQ
+!                          - GOCART-GEOS5
+!                          - NAAPS
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -393,42 +405,41 @@ CONTAINS
 
     ! Read the aerosol coefficient data
     ! ...Read the dimensions
-    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
-      READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
-                                 dummy%n_Radii         , &
-                                 dummy%n_Types         , &
-                                 dummy%n_RH            , &
-                                 dummy%n_Legendre_Terms, &
-                                 dummy%n_Phase_Elements
-      dummy%n_Sigma = 0
-    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
-      READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
-                                 dummy%n_Radii         , &
-                                 dummy%n_Sigma         , &
-                                 dummy%n_Types         , &
-                                 dummy%n_RH            , &
-                                 dummy%n_Legendre_Terms, &
-                                 dummy%n_Phase_Elements
-    ELSE
-      WRITE( msg,'("Invalid scheme of aerosol coefficient")' )
-      CALL Read_Cleanup(); RETURN
-    END IF
-
+    READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
+                               dummy%n_Radii         , &
+                               dummy%n_Sigma         , &
+                               dummy%n_Types         , &
+                               dummy%n_RH            , &
+                               dummy%n_Legendre_Terms, &
+                               dummy%n_Phase_Elements
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
+
+    ! ... Read the dimension used only for CRTM and CMAQ tables
+    dummy%n_RH_Radii = 1 ! dummy variable if not CRTM nor CMAQ tables
+    IF ( Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ' )THEN
+      READ( fid,IOSTAT=io_stat ) dummy%n_RH_Radii
+    END IF
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
+
     ! Add aerosol scheme
     dummy%Scheme = TRIM(Aerosol_Model)
 
     ! ...Allocate the object
     CALL AerosolCoeff_Create( &
            AerosolCoeff          , &
+           dummy%Scheme          , &
            dummy%n_Wavelengths   , &
            dummy%n_Radii         , &
            dummy%n_Sigma         , &
            dummy%n_Types         , &
            dummy%n_RH            , &
+           dummy%n_RH_Radii      , &
            dummy%n_Legendre_Terms, &
            dummy%n_Phase_Elements  )
     IF ( .NOT. AerosolCoeff_Associated( AerosolCoeff ) ) THEN
@@ -480,17 +491,11 @@ CONTAINS
     END IF
 
     ! ...Read the dimension vectors
-    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
-      READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
-                                 AerosolCoeff%Reff      , &
-                                 AerosolCoeff%RH
-    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
-      READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
-                                 AerosolCoeff%Frequency , &
-                                 AerosolCoeff%Reff      , &
-                                 AerosolCoeff%Rsig      , &
-                                 AerosolCoeff%RH
-    END IF
+    READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
+                               AerosolCoeff%Reff      , &
+                               AerosolCoeff%Rsig      , &
+                               AerosolCoeff%RH
+
 
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimension vector data. IOSTAT = ",i0)' ) io_stat
@@ -666,26 +671,21 @@ CONTAINS
 
     ! Write the aerosol coefficient data
     ! ...Write the dimensions
-    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
-      WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
-                                  AerosolCoeff%n_Radii         , &
-                                  AerosolCoeff%n_Types         , &
-                                  AerosolCoeff%n_RH            , &
-                                  AerosolCoeff%n_Legendre_Terms, &
-                                  AerosolCoeff%n_Phase_Elements
-    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
-      WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
-                                  AerosolCoeff%n_Radii         , &
-                                  AerosolCoeff%n_Sigma         , &
-                                  AerosolCoeff%n_Types         , &
-                                  AerosolCoeff%n_RH            , &
-                                  AerosolCoeff%n_Legendre_Terms, &
-                                  AerosolCoeff%n_Phase_Elements
-    ELSE
-      WRITE( msg,'("Invalid version of aerosol coefficient")' )
+    WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
+                                AerosolCoeff%n_Radii         , &
+                                AerosolCoeff%n_Sigma         , &
+                                AerosolCoeff%n_Types         , &
+                                AerosolCoeff%n_RH            , &
+                                AerosolCoeff%n_Legendre_Terms, &
+                                AerosolCoeff%n_Phase_Elements
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
     END IF
-
+    ! ... Write the dimension used only for CRTM and CMAQ tables
+    IF ( Aerosol_Model == 'CRTM' .OR. Aerosol_Model == 'CMAQ' )THEN
+      WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_RH_Radii
+    END IF
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
@@ -719,17 +719,10 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
     ! ...Write the dimension vectors
-    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
-       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
-                                  AerosolCoeff%Reff      , &
-                                  AerosolCoeff%RH
-    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
-      WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
-                                  AerosolCoeff%Frequency , &
-                                  AerosolCoeff%Reff      , &
-                                  AerosolCoeff%Rsig      , &
-                                  AerosolCoeff%RH
-    END IF
+    WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
+                                AerosolCoeff%Reff      , &
+                                AerosolCoeff%Rsig      , &
+                                AerosolCoeff%RH
 
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing dimension vector data. IOSTAT = ",i0)' ) io_stat

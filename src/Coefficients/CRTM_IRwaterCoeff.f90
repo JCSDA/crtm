@@ -19,7 +19,9 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 04-May-2012
 !                       paul.vandelst@noaa.gov
-!
+!      Modified by:     Cheng Dang, 05-Mar-2022
+!                       dangch@ucar.edu
+!                       Add IRwaterCoeff_ReadFile_IO for netCDF I/O
 
 MODULE CRTM_IRwaterCoeff
 
@@ -30,8 +32,8 @@ MODULE CRTM_IRwaterCoeff
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, Display_Message
   USE IRwaterCoeff_Define, ONLY: IRwaterCoeff_type, &
                                  IRwaterCoeff_Associated, &
-                                 IRwaterCoeff_Destroy, &
-                                 IRwaterCoeff_ReadFile
+                                 IRwaterCoeff_Destroy
+  USE IRwaterCoeff_IO    , ONLY: IRwaterCoeff_ReadFile_IO
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -47,6 +49,7 @@ MODULE CRTM_IRwaterCoeff
   PUBLIC :: CRTM_IRwaterCoeff_Load
   PUBLIC :: CRTM_IRwaterCoeff_Destroy
   PUBLIC :: CRTM_IRwaterCoeff_IsLoaded
+  PUBLIC :: CRTM_IRwaterCoeff_Classification
 
 
   ! -----------------
@@ -97,6 +100,15 @@ CONTAINS
 !                           directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       netCDF:             Set this logical argument to specify file format.
+!                           If == .FALSE., Binary [DEFAULT].
+!                              == .TRUE.,  netCDF
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -151,6 +163,7 @@ CONTAINS
   FUNCTION CRTM_IRwaterCoeff_Load( &
     Filename         , &  ! Input
     File_Path        , &  ! Optional input
+    netCDF           , &  ! Optional input
     Quiet            , &  ! Optional input
     Process_ID       , &  ! Optional input
     Output_Process_ID) &  ! Optional input
@@ -158,6 +171,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: Filename
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
+    LOGICAL,      OPTIONAL, INTENT(IN) :: netCDF
     LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
@@ -169,6 +183,8 @@ CONTAINS
     CHARACTER(ML) :: msg, pid_msg
     CHARACTER(ML) :: IRwaterCoeff_File
     LOGICAL :: noisy
+    ! Function variables
+    LOGICAL :: Binary
 
     ! Setup
     err_stat = SUCCESS
@@ -189,13 +205,17 @@ CONTAINS
     ELSE
       pid_msg = ''
     END IF
+    ! ...Check netCDF argument
+    Binary = .TRUE.
+    IF ( PRESENT(netCDF) ) Binary = .NOT. netCDF
 
 
     ! Read the IR water IRwaterCoeff file
-    err_stat = IRwaterCoeff_ReadFile( &
+    err_stat = IRwaterCoeff_ReadFile_IO( &
                  IRwaterC, &
                  IRwaterCoeff_File, &
-                 Quiet = .NOT. noisy )
+                 netCDF = .NOT. Binary, &
+                 Quiet  = .NOT. noisy )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading IRwaterCoeff IRwaterCoeff file '//TRIM(IRwaterCoeff_File)//TRIM(pid_msg)
       CALL Load_Cleanup(); RETURN
@@ -282,6 +302,32 @@ CONTAINS
 
   END FUNCTION CRTM_IRwaterCoeff_Destroy
 
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_IRwaterCoeff_Classification
+!
+! PURPOSE:
+!       Function to return the classification name of the public
+!       IRwaterC structure
+!
+! CALLING SEQUENCE:
+!       Classification = CRTM_IRwaterCoeff_Classification()
+!
+! FUNCTION RESULT:
+!   Classification:       The classification name field of IRwaterC
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  PURE FUNCTION CRTM_IRwaterCoeff_Classification() RESULT( Classification )
+    CHARACTER(LEN(IRwaterC%Classification_Name)) :: Classification
+    Classification = IRwaterC%Classification_Name
+  END FUNCTION
 
 !------------------------------------------------------------------------------
 !:sdoc+:

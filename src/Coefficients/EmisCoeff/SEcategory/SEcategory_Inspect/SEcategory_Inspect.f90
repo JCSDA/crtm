@@ -28,7 +28,7 @@ PROGRAM SEcategory_Inspect
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'SEcategory_Inspect'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  !CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
 
   ! ---------
   ! Variables

@@ -46,7 +46,7 @@ MODULE LBLRTM_Layer_Define
   PUBLIC :: LBLRTM_Layer_Create
   PUBLIC :: LBLRTM_Layer_Inspect
   PUBLIC :: LBLRTM_Layer_Frequency
-  PUBLIC :: LBLRTM_Layer_DefineVersion
+  !PUBLIC :: LBLRTM_Layer_DefineVersion
   PUBLIC :: LBLRTM_Layer_Compare
 
 
@@ -65,7 +65,7 @@ MODULE LBLRTM_Layer_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  !CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 
@@ -484,10 +484,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE LBLRTM_Layer_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LBLRTM_Layer_DefineVersion
+  !SUBROUTINE LBLRTM_Layer_DefineVersion( Id )
+  !  CHARACTER(*), INTENT(OUT) :: Id
+  !  Id = MODULE_VERSION_ID
+  !END SUBROUTINE LBLRTM_Layer_DefineVersion
 
 
 !------------------------------------------------------------------------------

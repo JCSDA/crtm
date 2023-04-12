@@ -9,6 +9,9 @@
 !       Written by:     Paul van Delst, CIMSS/SSEC 10-Apr-2007
 !                       paul.vandelst@ssec.wisc.edu
 !
+!       Modified by:    Isaac Moradi, ESSIC/GMAO 25-Sept-2021
+!                       isaac.moradi@nasa.gov
+!
 
 MODULE CloudCoeff_netCDF_IO
 
@@ -21,14 +24,13 @@ MODULE CloudCoeff_netCDF_IO
   USE Message_Handler  , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE File_Utility     , ONLY: File_Exists
   USE String_Utility   , ONLY: StrClean
-  USE CloudCoeff_Define, ONLY: CloudCoeff_type         , &
-                               CloudCoeff_Associated   , &
-                               CloudCoeff_Destroy      , &
-                               CloudCoeff_Create       , &
-                               CloudCoeff_Inspect      , &
-                               CloudCoeff_ValidRelease , &
-                               CloudCoeff_Info
-
+  USE CloudCoeff_Define, ONLY: CloudCoeff_type            , &
+                               CloudCoeff_Associated      , &
+                               CloudCoeff_Destroy         , &
+                               CloudCoeff_Create          , &
+                               CloudCoeff_Inspect         , &
+                               CloudCoeff_ValidRelease    , &
+                               CloudCoeff_Info            
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -63,36 +65,41 @@ MODULE CloudCoeff_netCDF_IO
 
   ! Dimension names
   CHARACTER(*), PARAMETER :: MW_FREQ_DIMNAME     = 'n_MW_Frequencies'
-  CHARACTER(*), PARAMETER :: MW_REFF_DIMNAME     = 'n_MW_Radii'
+  CHARACTER(*), PARAMETER :: MW_REFF_WC_DIMNAME     = 'n_MW_Radii'
   CHARACTER(*), PARAMETER :: IR_FREQ_DIMNAME     = 'n_IR_Frequencies'
   CHARACTER(*), PARAMETER :: IR_REFF_DIMNAME     = 'n_IR_Radii'
   CHARACTER(*), PARAMETER :: TEMPERATURE_DIMNAME = 'n_Temperatures'
-  CHARACTER(*), PARAMETER :: DENSITY_DIMNAME     = 'n_Densities'
+  CHARACTER(*), PARAMETER :: MW_DENSITY_DIMNAME     = 'n_MW_Densities'
   CHARACTER(*), PARAMETER :: IR_DENSITY_DIMNAME  = 'n_IR_Densities'
   CHARACTER(*), PARAMETER :: LEGENDRE_DIMNAME    = 'n_Legendre_Terms'
   CHARACTER(*), PARAMETER :: PHASE_DIMNAME       = 'n_Phase_Elements'
 
   ! Variable names
-  CHARACTER(*), PARAMETER :: FREQUENCY_MW_VARNAME = 'Frequency_MW'
-  CHARACTER(*), PARAMETER :: FREQUENCY_IR_VARNAME = 'Frequency_IR'
-  CHARACTER(*), PARAMETER :: REFF_MW_VARNAME      = 'Reff_MW'
-  CHARACTER(*), PARAMETER :: REFF_IR_VARNAME      = 'Reff_IR'
-  CHARACTER(*), PARAMETER :: TEMPERATURE_VARNAME  = 'Temperature'
-  CHARACTER(*), PARAMETER :: DENSITY_VARNAME      = 'Density'
-
+  CHARACTER(*), PARAMETER :: FREQUENCY_MW_VARNAME    = 'Frequency_MW'
+  CHARACTER(*), PARAMETER :: FREQUENCY_IR_VARNAME    = 'Frequency_IR'
+  CHARACTER(*), PARAMETER :: WC_MW_VARNAME           = 'Water_Density_MW'
+  CHARACTER(*), PARAMETER :: REFF_MW_VARNAME         = 'Reff_MW'
+  CHARACTER(*), PARAMETER :: REFF_IR_VARNAME         = 'Reff_IR'
+  CHARACTER(*), PARAMETER :: TEMPERATURE_VARNAME     = 'Temperature'
+  CHARACTER(*), PARAMETER :: MW_DENSITY_VARNAME      = 'Density_MW' 
+  CHARACTER(*), PARAMETER :: IR_DENSITY_VARNAME      = 'Density_IR'
+  
   CHARACTER(*), PARAMETER :: KE_L_MW_VARNAME     = 'ke_L_MW'
   CHARACTER(*), PARAMETER :: W_L_MW_VARNAME      = 'w_L_MW'
   CHARACTER(*), PARAMETER :: G_L_MW_VARNAME      = 'g_L_MW'
+  CHARACTER(*), PARAMETER :: KB_L_MW_VARNAME     = 'kb_L_MW'
   CHARACTER(*), PARAMETER :: PCOEFF_L_MW_VARNAME = 'pcoeff_L_MW'
 
   CHARACTER(*), PARAMETER :: KE_S_MW_VARNAME     = 'ke_S_MW'
   CHARACTER(*), PARAMETER :: W_S_MW_VARNAME      = 'w_S_MW'
   CHARACTER(*), PARAMETER :: G_S_MW_VARNAME      = 'g_S_MW'
+  CHARACTER(*), PARAMETER :: KB_S_MW_VARNAME     = 'kb_S_MW'
   CHARACTER(*), PARAMETER :: PCOEFF_S_MW_VARNAME = 'pcoeff_S_MW'
 
   CHARACTER(*), PARAMETER :: KE_IR_VARNAME       = 'ke_IR'
   CHARACTER(*), PARAMETER :: W_IR_VARNAME        = 'w_IR'
   CHARACTER(*), PARAMETER :: G_IR_VARNAME        = 'g_IR'
+  CHARACTER(*), PARAMETER :: KB_IR_VARNAME       = 'kb_IR'
   CHARACTER(*), PARAMETER :: PCOEFF_IR_VARNAME   = 'pcoeff_IR'
 
   ! Variable long name attribute.
@@ -100,24 +107,29 @@ MODULE CloudCoeff_netCDF_IO
 
   CHARACTER(*), PARAMETER :: FREQUENCY_MW_LONGNAME = 'Frequency'
   CHARACTER(*), PARAMETER :: FREQUENCY_IR_LONGNAME = 'Frequency'
+  CHARACTER(*), PARAMETER :: WC_MW_LONGNAME        = 'Water Content'
   CHARACTER(*), PARAMETER :: REFF_MW_LONGNAME      = 'Effective radius'
   CHARACTER(*), PARAMETER :: REFF_IR_LONGNAME      = 'Effective radius'
   CHARACTER(*), PARAMETER :: TEMPERATURE_LONGNAME  = 'Temperature'
-  CHARACTER(*), PARAMETER :: DENSITY_LONGNAME      = 'Density'
+  CHARACTER(*), PARAMETER :: MW_DENSITY_LONGNAME      = 'MW Density'
+  CHARACTER(*), PARAMETER :: IR_DENSITY_LONGNAME      = 'IR Density'
 
   CHARACTER(*), PARAMETER :: KE_L_MW_LONGNAME     = 'Microwave ke(L)'
   CHARACTER(*), PARAMETER :: W_L_MW_LONGNAME      = 'Microwave w(L)'
   CHARACTER(*), PARAMETER :: G_L_MW_LONGNAME      = 'Microwave g(L)'
+  CHARACTER(*), PARAMETER :: KB_L_MW_LONGNAME     = 'Microwave bs(L)'
   CHARACTER(*), PARAMETER :: PCOEFF_L_MW_LONGNAME = 'Microwave pcoeff(L)'
 
   CHARACTER(*), PARAMETER :: KE_S_MW_LONGNAME     = 'Microwave ke(S)'
   CHARACTER(*), PARAMETER :: W_S_MW_LONGNAME      = 'Microwave w(S)'
   CHARACTER(*), PARAMETER :: G_S_MW_LONGNAME      = 'Microwave g(S)'
+  CHARACTER(*), PARAMETER :: KB_S_MW_LONGNAME     = 'Microwave bs(S)'
   CHARACTER(*), PARAMETER :: PCOEFF_S_MW_LONGNAME = 'Microwave pcoeff(S)'
 
   CHARACTER(*), PARAMETER :: KE_IR_LONGNAME       = 'Infrared ke'
   CHARACTER(*), PARAMETER :: W_IR_LONGNAME        = 'Infrared w'
   CHARACTER(*), PARAMETER :: G_IR_LONGNAME        = 'Infrared g'
+  CHARACTER(*), PARAMETER :: KB_IR_LONGNAME       = 'Infrared bs'
   CHARACTER(*), PARAMETER :: PCOEFF_IR_LONGNAME   = 'Infrared pcoeff'
   
   ! Variable description attribute.
@@ -125,6 +137,7 @@ MODULE CloudCoeff_netCDF_IO
 
   CHARACTER(*), PARAMETER :: FREQUENCY_MW_DESCRIPTION = 'Microwave frequency LUT dimension vector'
   CHARACTER(*), PARAMETER :: FREQUENCY_IR_DESCRIPTION = 'Infrared frequency LUT dimension vector'
+  CHARACTER(*), PARAMETER :: WC_MW_DESCRIPTION        = 'Microwave water content LUT dimension vector'
   CHARACTER(*), PARAMETER :: REFF_MW_DESCRIPTION      = 'Microwave effective radius LUT dimension vector'
   CHARACTER(*), PARAMETER :: REFF_IR_DESCRIPTION      = 'Infrared effective radius LUT dimension vector'
   CHARACTER(*), PARAMETER :: TEMPERATURE_DESCRIPTION  = 'Temperature LUT dimension vector'
@@ -133,16 +146,19 @@ MODULE CloudCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: KE_L_MW_DESCRIPTION     = 'Mass extinction coefficient for liquid phase microwave scatterers'
   CHARACTER(*), PARAMETER :: W_L_MW_DESCRIPTION      = 'Single scatter albedo for liquid phase microwave scatterers'
   CHARACTER(*), PARAMETER :: G_L_MW_DESCRIPTION      = 'Asymmetry parameter for liquid phase microwave scatterers'
+  CHARACTER(*), PARAMETER :: KB_L_MW_DESCRIPTION     = 'Backscattering for liquid phase microwave scatterers'
   CHARACTER(*), PARAMETER :: PCOEFF_L_MW_DESCRIPTION = 'Phase coefficients for liquid phase microwave scatterers'
 
   CHARACTER(*), PARAMETER :: KE_S_MW_DESCRIPTION     = 'Mass extinction coefficient for solid phase microwave scatterers'
   CHARACTER(*), PARAMETER :: W_S_MW_DESCRIPTION      = 'Single scatter albedo for solid phase microwave scatterers'
   CHARACTER(*), PARAMETER :: G_S_MW_DESCRIPTION      = 'Asymmetry parameter for solid phase microwave scatterers'
+  CHARACTER(*), PARAMETER :: KB_S_MW_DESCRIPTION     = 'Backscattering for solid phase microwave scatterers'
   CHARACTER(*), PARAMETER :: PCOEFF_S_MW_DESCRIPTION = 'Phase coefficients for solid phase microwave scatterers'
 
   CHARACTER(*), PARAMETER :: KE_IR_DESCRIPTION       = 'Mass extinction coefficient for infrared scatterers'
   CHARACTER(*), PARAMETER :: W_IR_DESCRIPTION        = 'Single scatter albedo for infrared scatterers'
   CHARACTER(*), PARAMETER :: G_IR_DESCRIPTION        = 'Asymmetry parameter for infrared scatterers'
+  CHARACTER(*), PARAMETER :: KB_IR_DESCRIPTION       = 'Backscattering for infrared scatterers'
   CHARACTER(*), PARAMETER :: PCOEFF_IR_DESCRIPTION   = 'Phase coefficients for infrared scatterers'
 
 
@@ -154,6 +170,7 @@ MODULE CloudCoeff_netCDF_IO
 
   CHARACTER(*), PARAMETER :: FREQUENCY_MW_UNITS = 'GigaHertz (GHz)'
   CHARACTER(*), PARAMETER :: FREQUENCY_IR_UNITS = 'Inverse centimetres (cm^-1)'
+  CHARACTER(*), PARAMETER :: WC_MW_UNITS        = 'Kilograms per square metre (kg.m^-2)'
   CHARACTER(*), PARAMETER :: REFF_MW_UNITS      = 'Microns (um)'
   CHARACTER(*), PARAMETER :: REFF_IR_UNITS      = 'Microns (um)'
   CHARACTER(*), PARAMETER :: TEMPERATURE_UNITS  = 'Kelvin (K)'
@@ -162,16 +179,19 @@ MODULE CloudCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: KE_L_MW_UNITS     = 'Metres squared per kilogram (m^2.kg^-1)'
   CHARACTER(*), PARAMETER :: W_L_MW_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: G_L_MW_UNITS      = 'N/A'
+  CHARACTER(*), PARAMETER :: KB_L_MW_UNITS     = 'N/A'
   CHARACTER(*), PARAMETER :: PCOEFF_L_MW_UNITS = 'N/A'
 
   CHARACTER(*), PARAMETER :: KE_S_MW_UNITS     = 'Metres squared per kilogram (m^2.kg^-1)'
   CHARACTER(*), PARAMETER :: W_S_MW_UNITS      = 'N/A'
   CHARACTER(*), PARAMETER :: G_S_MW_UNITS      = 'N/A'
+  CHARACTER(*), PARAMETER :: KB_S_MW_UNITS     = 'N/A'
   CHARACTER(*), PARAMETER :: PCOEFF_S_MW_UNITS = 'N/A'
 
   CHARACTER(*), PARAMETER :: KE_IR_UNITS       = 'Metres squared per kilogram (m^2.kg^-1)'
   CHARACTER(*), PARAMETER :: W_IR_UNITS        = 'N/A'
   CHARACTER(*), PARAMETER :: G_IR_UNITS        = 'N/A'
+  CHARACTER(*), PARAMETER :: KB_IR_UNITS       = 'N/A'
   CHARACTER(*), PARAMETER :: PCOEFF_IR_UNITS   = 'N/A'
 
 
@@ -180,6 +200,7 @@ MODULE CloudCoeff_netCDF_IO
   
   REAL(Double), PARAMETER :: FREQUENCY_MW_FILLVALUE = ZERO
   REAL(Double), PARAMETER :: FREQUENCY_IR_FILLVALUE = ZERO
+  REAL(Double), PARAMETER :: WC_MW_FILLVALUE        = ZERO
   REAL(Double), PARAMETER :: REFF_MW_FILLVALUE      = ZERO
   REAL(Double), PARAMETER :: REFF_IR_FILLVALUE      = ZERO
   REAL(Double), PARAMETER :: TEMPERATURE_FILLVALUE  = ZERO
@@ -188,22 +209,26 @@ MODULE CloudCoeff_netCDF_IO
   REAL(Double), PARAMETER :: KE_L_MW_FILLVALUE     = ZERO
   REAL(Double), PARAMETER :: W_L_MW_FILLVALUE      = ZERO
   REAL(Double), PARAMETER :: G_L_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: KB_L_MW_FILLVALUE     = ZERO
   REAL(Double), PARAMETER :: PCOEFF_L_MW_FILLVALUE = ZERO
 
   REAL(Double), PARAMETER :: KE_S_MW_FILLVALUE     = ZERO
   REAL(Double), PARAMETER :: W_S_MW_FILLVALUE      = ZERO
   REAL(Double), PARAMETER :: G_S_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: KB_S_MW_FILLVALUE     = ZERO
   REAL(Double), PARAMETER :: PCOEFF_S_MW_FILLVALUE = ZERO
 
   REAL(Double), PARAMETER :: KE_IR_FILLVALUE       = ZERO
   REAL(Double), PARAMETER :: W_IR_FILLVALUE        = ZERO
   REAL(Double), PARAMETER :: G_IR_FILLVALUE        = ZERO
+  REAL(Double), PARAMETER :: KB_IR_FILLVALUE       = ZERO
   REAL(Double), PARAMETER :: PCOEFF_IR_FILLVALUE   = ZERO
 
 
   ! Variable types
   INTEGER, PARAMETER :: FREQUENCY_MW_TYPE = NF90_DOUBLE
   INTEGER, PARAMETER :: FREQUENCY_IR_TYPE = NF90_DOUBLE
+  INTEGER, PARAMETER :: WC_MW_TYPE        = NF90_DOUBLE
   INTEGER, PARAMETER :: REFF_MW_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: REFF_IR_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: TEMPERATURE_TYPE  = NF90_DOUBLE
@@ -212,16 +237,19 @@ MODULE CloudCoeff_netCDF_IO
   INTEGER, PARAMETER :: KE_L_MW_TYPE     = NF90_DOUBLE
   INTEGER, PARAMETER :: W_L_MW_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: G_L_MW_TYPE      = NF90_DOUBLE
+  INTEGER, PARAMETER :: KB_L_MW_TYPE     = NF90_DOUBLE
   INTEGER, PARAMETER :: PCOEFF_L_MW_TYPE = NF90_DOUBLE
 
   INTEGER, PARAMETER :: KE_S_MW_TYPE     = NF90_DOUBLE
   INTEGER, PARAMETER :: W_S_MW_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: G_S_MW_TYPE      = NF90_DOUBLE
+  INTEGER, PARAMETER :: KB_S_MW_TYPE     = NF90_DOUBLE
   INTEGER, PARAMETER :: PCOEFF_S_MW_TYPE = NF90_DOUBLE
 
   INTEGER, PARAMETER :: KE_IR_TYPE       = NF90_DOUBLE
   INTEGER, PARAMETER :: W_IR_TYPE        = NF90_DOUBLE
   INTEGER, PARAMETER :: G_IR_TYPE        = NF90_DOUBLE
+  INTEGER, PARAMETER :: KB_IR_TYPE       = NF90_DOUBLE
   INTEGER, PARAMETER :: PCOEFF_IR_TYPE   = NF90_DOUBLE
 
 
@@ -250,10 +278,11 @@ CONTAINS
 !                        Filename, &
 !                        n_MW_Frequencies = n_MW_Frequencies , &
 !                        n_MW_Radii       = n_MW_Radii       , &
+!                        n_MW_Densities   = n_MW_Densities   , &
 !                        n_IR_Frequencies = n_IR_Frequencies , &
 !                        n_IR_Radii       = n_IR_Radii       , &
+!                        n_IR_Densities   = n_IR_Densities   , &
 !                        n_Temperatures   = n_Temperatures   , &
-!                        n_Densities      = n_Densities      , &
 !                        n_Legendre_Terms = n_Legendre_Terms , &
 !                        n_Phase_Elements = n_Phase_Elements , &
 !                        Release          = Release          , &
@@ -285,6 +314,13 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
+!       n_MW_Densities:     The number of fixed MW densities for snow, graupel,
+!                           and hail/ice in the LUT. Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !       n_IR_Frequencies:   The number of infrared frequencies in
 !                           the LUT.
 !                           UNITS:      N/A
@@ -299,15 +335,15 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Temperatures:     The number of discrete layer temperatures
-!                           in the LUT.
+!       n_IR_Densities:     The number of fixed IR densities for snow, graupel,
+!                           and hail/ice in the LUT. Must be > 0.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Densities:        The number of fixed densities for snow, graupel,
-!                           and hail/ice in the LUT. Must be > 0.
+!       n_Temperatures:     The number of discrete layer temperatures
+!                           in the LUT.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -376,10 +412,11 @@ CONTAINS
     Filename        , &  ! Input
     n_MW_Frequencies, &  ! Optional output
     n_MW_Radii      , &  ! Optional output
+    n_MW_Densities  , &  ! Optional output
     n_IR_Frequencies, &  ! Optional output
     n_IR_Radii      , &  ! Optional output
+    n_IR_Densities  , &  ! Optional output
     n_Temperatures  , &  ! Optional output
-    n_Densities     , &  ! Optional output
     n_Legendre_Terms, &  ! Optional output
     n_Phase_Elements, &  ! Optional output
     Release         , &  ! Optional output
@@ -391,18 +428,20 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Frequencies    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Radii          
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Radii    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Densities  
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Frequencies    
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Radii          
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Temperatures      
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Densities         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Densities
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Temperatures         
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements    
     INTEGER,      OPTIONAL, INTENT(OUT) :: Release         
     INTEGER,      OPTIONAL, INTENT(OUT) :: Version         
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment 
+    
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -430,7 +469,6 @@ CONTAINS
     ! ...Close the file if any error from here on
     Close_File = .TRUE.
 
-
     ! Get the dimensions
     ! ...n_MW_Frequencies dimension 
     NF90_Status = NF90_INQ_DIMID( FileId,MW_FREQ_DIMNAME,DimId )
@@ -446,15 +484,15 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
     ! ...n_MW_Radii dimension 
-    NF90_Status = NF90_INQ_DIMID( FileId,MW_REFF_DIMNAME,DimId )
+    NF90_Status = NF90_INQ_DIMID( FileId,MW_REFF_WC_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring dimension ID for '//MW_REFF_DIMNAME//' - '// &
+      msg = 'Error inquiring dimension ID for '//MW_REFF_WC_DIMNAME//' - '// &
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
     NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_MW_Radii )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading dimension value for '//MW_REFF_DIMNAME//' - '// &
+      msg = 'Error reading dimension value for '//MW_REFF_WC_DIMNAME//' - '// &
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
@@ -497,19 +535,40 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    ! ...n_Densities dimension 
-    NF90_Status = NF90_INQ_DIMID( FileId,DENSITY_DIMNAME,DimId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring dimension ID for '//DENSITY_DIMNAME//' - '// &
+    ! ...n_MW_Densities dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,MW_DENSITY_DIMNAME,DimId )
+    IF ( NF90_Status .EQ. NF90_EBADDIM ) THEN
+        NF90_Status = NF90_INQ_DIMID( FileId,'n_Densities',DimId )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+           msg = 'Error inquiring dimension ID for '// 'n_Densities' //' - '// &
+                 TRIM(NF90_STRERROR( NF90_Status ))
+           CALL Inquire_Cleanup(); RETURN
+        END IF
+    ELSE IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//MW_DENSITY_DIMNAME//' - '// &
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_Densities )
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_MW_Densities )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading dimension value for '//DENSITY_DIMNAME//' - '// &
+      msg = 'Error reading dimension value for '//MW_DENSITY_DIMNAME//' - '// &
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
+    ! ...n_IR_Densities dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,IR_DENSITY_DIMNAME,DimId )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//IR_DENSITY_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_IR_Densities )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//IR_DENSITY_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    
     ! ...n_Legendre_Terms dimension 
     NF90_Status = NF90_INQ_DIMID( FileId,LEGENDRE_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -564,10 +623,11 @@ CONTAINS
     ! Set the return values
     IF ( PRESENT(n_MW_Frequencies) ) n_MW_Frequencies = CloudCoeff%n_MW_Frequencies
     IF ( PRESENT(n_MW_Radii      ) ) n_MW_Radii       = CloudCoeff%n_MW_Radii      
+    IF ( PRESENT(n_MW_Densities  ) ) n_MW_Densities   = CloudCoeff%n_MW_Densities  
     IF ( PRESENT(n_IR_Frequencies) ) n_IR_Frequencies = CloudCoeff%n_IR_Frequencies
-    IF ( PRESENT(n_IR_Radii      ) ) n_IR_Radii       = CloudCoeff%n_IR_Radii      
-    IF ( PRESENT(n_Temperatures  ) ) n_Temperatures   = CloudCoeff%n_Temperatures  
-    IF ( PRESENT(n_Densities     ) ) n_Densities      = CloudCoeff%n_Densities     
+    IF ( PRESENT(n_IR_Radii      ) ) n_IR_Radii       = CloudCoeff%n_IR_Radii     
+    IF ( PRESENT(n_IR_Densities  ) ) n_IR_Densities   = CloudCoeff%n_IR_Densities  
+    IF ( PRESENT(n_Temperatures  ) ) n_Temperatures   = CloudCoeff%n_Temperatures     
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = CloudCoeff%n_Legendre_Terms-1  ! Indexed from 0, so subtract 1.
     IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = CloudCoeff%n_Phase_Elements
     IF ( PRESENT(Release         ) ) Release          = CloudCoeff%Release     
@@ -714,10 +774,11 @@ CONTAINS
                  Filename                    , &  ! Input
                  CloudCoeff%n_MW_Frequencies , &  ! Input
                  CloudCoeff%n_MW_Radii       , &  ! Input
+                 CloudCoeff%n_MW_Densities   , &  ! Input
                  CloudCoeff%n_IR_Frequencies , &  ! Input
                  CloudCoeff%n_IR_Radii       , &  ! Input
+                 CloudCoeff%n_IR_Densities   , &  ! Input
                  CloudCoeff%n_Temperatures   , &  ! Input
-                 CloudCoeff%n_Densities      , &  ! Input
                  CloudCoeff%n_Legendre_Terms , &  ! Input
                  CloudCoeff%n_Phase_Elements , &  ! Input
                  FileId                      , &  ! Output
@@ -760,19 +821,36 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...Reff_MW variable 
-    NF90_Status = NF90_INQ_VARID( FileId,REFF_MW_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_MW_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Reff_MW )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//REFF_MW_VARNAME//' to '//TRIM(Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(); RETURN
-    END IF
+    ! Determine whether to write Water_Content or Reff
+    IF (ALL(CloudCoeff%Water_Density_MW .GT. ZERO)) THEN
+      ! ...WC_MW variable 
+      NF90_Status = NF90_INQ_VARID( FileId,WC_MW_VARNAME,VarId )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//WC_MW_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Water_Density_MW )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error writing '//WC_MW_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+    ELSE
+      ! ...Reff_MW variable 
+      NF90_Status = NF90_INQ_VARID( FileId,REFF_MW_VARNAME,VarId )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_MW_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Reff_MW )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error writing '//REFF_MW_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+    ENDIF
     ! ...Reff_IR variable 
     NF90_Status = NF90_INQ_VARID( FileId,REFF_IR_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -799,16 +877,16 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...Density variable 
-    NF90_Status = NF90_INQ_VARID( FileId,DENSITY_VARNAME,VarId )
+    ! ...MW Density variable 
+    NF90_Status = NF90_INQ_VARID( FileId,MW_DENSITY_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(Filename)//' for '//DENSITY_VARNAME//&
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//MW_DENSITY_VARNAME//&
             ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Density )
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Density_MW )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//DENSITY_VARNAME//' to '//TRIM(Filename)//&
+      msg = 'Error writing '//MW_DENSITY_VARNAME//' to '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
@@ -848,6 +926,19 @@ CONTAINS
     NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%g_L_MW )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//G_L_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...kb_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KB_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KB_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%kb_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//KB_L_MW_VARNAME//' to '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
@@ -903,6 +994,19 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
+    ! ...kb_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KB_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KB_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%kb_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//KB_S_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
     ! ...pcoeff_S_MW variable 
     NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_S_MW_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -916,6 +1020,21 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
+    
+    ! ...IR Density variable 
+    NF90_Status = NF90_INQ_VARID( FileId,IR_DENSITY_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//IR_DENSITY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Density_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//IR_DENSITY_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    
     ! ...ke_IR variable 
     NF90_Status = NF90_INQ_VARID( FileId,KE_IR_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -952,6 +1071,19 @@ CONTAINS
     NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%g_IR )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error writing '//G_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...kb_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KB_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KB_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%kb_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//KB_IR_VARNAME//' to '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
@@ -1105,11 +1237,12 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: FileId
     INTEGER :: n_MW_Frequencies
-    INTEGER :: n_MW_Radii      
+    INTEGER :: n_MW_Radii  
+    INTEGER :: n_MW_Densities  
     INTEGER :: n_IR_Frequencies
-    INTEGER :: n_IR_Radii      
-    INTEGER :: n_Temperatures  
-    INTEGER :: n_Densities     
+    INTEGER :: n_IR_Radii     
+    INTEGER :: n_IR_Densities  
+    INTEGER :: n_Temperatures     
     INTEGER :: n_Legendre_Terms
     INTEGER :: n_Phase_Elements
     INTEGER :: VarId
@@ -1133,10 +1266,11 @@ CONTAINS
                  Filename, &
                  n_MW_Frequencies = n_MW_Frequencies, &
                  n_MW_Radii       = n_MW_Radii      , &
+                 n_MW_Densities   = n_MW_Densities  , &
                  n_IR_Frequencies = n_IR_Frequencies, &
                  n_IR_Radii       = n_IR_Radii      , &
+                 n_IR_Densities   = n_IR_Densities  , &
                  n_Temperatures   = n_Temperatures  , &
-                 n_Densities      = n_Densities     , &
                  n_Legendre_Terms = n_Legendre_Terms, &
                  n_Phase_Elements = n_Phase_Elements  )
     IF ( err_stat /= SUCCESS ) THEN
@@ -1150,10 +1284,11 @@ CONTAINS
            CloudCoeff, &
            n_MW_Frequencies, &
            n_MW_Radii      , &
+           n_MW_Densities     , &
            n_IR_Frequencies, &
            n_IR_Radii      , &
+           n_IR_Densities     , &
            n_Temperatures  , &
-           n_Densities     , &
            n_Legendre_Terms, &
            n_Phase_Elements  )
     IF ( .NOT. CloudCoeff_Associated(CloudCoeff) ) THEN
@@ -1219,19 +1354,42 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Reff_MW variable 
-    NF90_Status = NF90_INQ_VARID( FileId,REFF_MW_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_MW_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(); RETURN
+    
+    ! ...WC_MW variable - old CRTM CloudCoef are based on Reff but the new ones
+    ! use water content. Here we check to see whether the NetCDF file includes
+    ! the WC_MW variable or not, if not then will try to read Reff, otherwise 
+    ! if WC_MW exist then will check to make sure that no error happended and read it
+    NF90_Status = NF90_INQ_VARID( FileId,WC_MW_VARNAME,VarId )
+    IF ( NF90_Status .EQ. NF90_ENOTVAR ) THEN
+        ! ...Reff_MW variable 
+        NF90_Status = NF90_INQ_VARID( FileId,REFF_MW_VARNAME,VarId )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+             msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_MW_VARNAME//&
+                   ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+             CALL Read_Cleanup(); RETURN
+        END IF
+        NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Reff_MW )
+        CloudCoeff%Water_Density_MW = ZERO  ! we set Water Content to zero if read Reff
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+           msg = 'Error reading '//REFF_MW_VARNAME//' from '//TRIM(Filename)//&
+                 ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+           CALL Read_Cleanup(); RETURN
+        END IF
+    ELSE
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//WC_MW_VARNAME//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
+        NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Water_Density_MW )
+        CloudCoeff%Reff_MW = ZERO  ! we set Reff to zero if read water content
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error reading '//WC_MW_VARNAME//' from '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
     END IF
-    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Reff_MW )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//REFF_MW_VARNAME//' from '//TRIM(Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(); RETURN
-    END IF
+    
     ! ...Reff_IR variable 
     NF90_Status = NF90_INQ_VARID( FileId,REFF_IR_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -1258,16 +1416,23 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Density variable 
-    NF90_Status = NF90_INQ_VARID( FileId,DENSITY_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(Filename)//' for '//DENSITY_VARNAME//&
+    ! ...MW Density variable - old version may use Density instead of MW_Density
+    NF90_Status = NF90_INQ_VARID( FileId,MW_DENSITY_VARNAME,VarId )
+    IF ( NF90_Status .EQ. NF90_ENOTVAR ) THEN
+        NF90_Status = NF90_INQ_VARID( FileId,'Density',VarId )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+            msg = 'Error inquiring '//TRIM(Filename)//' for '//'Density'//&
+               ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+           CALL Read_Cleanup(); RETURN
+        END IF
+    ELSE IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//MW_DENSITY_VARNAME//&
             ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Density )
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Density_MW )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//DENSITY_VARNAME//' from '//TRIM(Filename)//&
+      msg = 'Error reading '//MW_DENSITY_VARNAME//' from '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
@@ -1310,6 +1475,23 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
+    ! ...kb_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KB_L_MW_VARNAME,VarId )
+    ! Old versions of CloudCoeff may not have backscattering so ignore the error
+    IF ( NF90_Status .NE. NF90_ENOTVAR ) THEN
+       IF ( NF90_Status /= NF90_NOERR ) THEN
+         msg = 'Error inquiring '//TRIM(Filename)//' for '//KB_L_MW_VARNAME//&
+               ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+         CALL Read_Cleanup(); RETURN
+       END IF
+       NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%kb_L_MW )
+       IF ( NF90_Status /= NF90_NOERR ) THEN
+         msg = 'Error reading '//KB_L_MW_VARNAME//' from '//TRIM(Filename)//&
+               ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+         CALL Read_Cleanup(); RETURN
+       END IF
+    ENDIF
+    
     ! ...pcoeff_L_MW variable 
     NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_L_MW_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -1362,6 +1544,22 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
+    ! ...kb_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KB_S_MW_VARNAME,VarId )
+    ! Old versions of CloudCoeff may not have backscattering so ignore the error
+    IF ( NF90_Status .NE. NF90_ENOTVAR ) THEN
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//KB_S_MW_VARNAME//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
+        NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%kb_S_MW )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error reading '//KB_S_MW_VARNAME//' from '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
+    ENDIF
     ! ...pcoeff_S_MW variable 
     NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_S_MW_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -1374,6 +1572,37 @@ CONTAINS
       msg = 'Error reading '//PCOEFF_S_MW_VARNAME//' from '//TRIM(Filename)//&
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
+    END IF
+    
+    ! ...IR Density variable 
+    NF90_Status = NF90_INQ_VARID( FileId,IR_DENSITY_VARNAME,VarId )
+    ! Old version may still use Density instead of IR_Density
+    IF ( NF90_Status .EQ. NF90_ENOTVAR ) THEN
+        NF90_Status = NF90_INQ_VARID( FileId,'Density',VarId )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+           msg = 'Error inquiring '//TRIM(Filename)//' for '//'Density'//&
+                 ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+           CALL Read_Cleanup(); RETURN
+        END IF
+        NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Density_IR(2:) )
+        CloudCoeff%Density_IR(1) = 100
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error reading '//IR_DENSITY_VARNAME//' from '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
+    ELSE    
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error inquiring '//TRIM(Filename)//' for '//IR_DENSITY_VARNAME//&
+                ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
+        NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Density_IR )
+        IF ( NF90_Status /= NF90_NOERR ) THEN
+          msg = 'Error reading '//IR_DENSITY_VARNAME//' from '//TRIM(Filename)//&
+                ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+          CALL Read_Cleanup(); RETURN
+        END IF
     END IF
     ! ...ke_IR variable 
     NF90_Status = NF90_INQ_VARID( FileId,KE_IR_VARNAME,VarId )
@@ -1414,6 +1643,22 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
+    ! ...kb_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KB_IR_VARNAME,VarId )
+    ! Old versions of CloudCoeff may not have backscattering so ignore the error
+    IF ( NF90_Status .NE. NF90_ENOTVAR ) THEN
+       IF ( NF90_Status /= NF90_NOERR ) THEN
+         msg = 'Error inquiring '//TRIM(Filename)//' for '//KB_IR_VARNAME//&
+               ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+         CALL Read_Cleanup(); RETURN
+       END IF
+       NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%kb_IR )
+       IF ( NF90_Status /= NF90_NOERR ) THEN
+         msg = 'Error reading '//KB_IR_VARNAME//' from '//TRIM(Filename)//&
+               ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+         CALL Read_Cleanup(); RETURN
+       END IF
+    ENDIF
     ! ...pcoeff_IR variable 
     NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_IR_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -1712,10 +1957,11 @@ CONTAINS
     Filename        , &  ! Input
     n_MW_Frequencies, &  ! Input
     n_MW_Radii      , &  ! Input
+    n_MW_Densities  , &  ! Input
     n_IR_Frequencies, &  ! Input
     n_IR_Radii      , &  ! Input
+    n_IR_Densities  , &  ! Input
     n_Temperatures  , &  ! Input
-    n_Densities     , &  ! Input
     n_Legendre_Terms, &  ! Input
     n_Phase_Elements, &  ! Input
     FileId          , &  ! Output
@@ -1727,11 +1973,12 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     ,           INTENT(IN)  :: n_MW_Frequencies
-    INTEGER     ,           INTENT(IN)  :: n_MW_Radii      
+    INTEGER     ,           INTENT(IN)  :: n_MW_Radii  
+    INTEGER     ,           INTENT(IN)  :: n_MW_Densities  
     INTEGER     ,           INTENT(IN)  :: n_IR_Frequencies
-    INTEGER     ,           INTENT(IN)  :: n_IR_Radii      
-    INTEGER     ,           INTENT(IN)  :: n_Temperatures  
-    INTEGER     ,           INTENT(IN)  :: n_Densities     
+    INTEGER     ,           INTENT(IN)  :: n_IR_Radii     
+    INTEGER     ,           INTENT(IN)  :: n_IR_Densities  
+    INTEGER     ,           INTENT(IN)  :: n_Temperatures     
     INTEGER     ,           INTENT(IN)  :: n_Legendre_Terms
     INTEGER     ,           INTENT(IN)  :: n_Phase_Elements
     INTEGER     ,           INTENT(OUT) :: FileId
@@ -1752,7 +1999,7 @@ CONTAINS
     INTEGER :: n_IR_Frequencies_DimID
     INTEGER :: n_IR_Radii_DimID
     INTEGER :: n_Temperatures_DimID
-    INTEGER :: n_Densities_DimID
+    INTEGER :: n_MW_Densities_DimID
     INTEGER :: n_IR_Densities_DimID
     INTEGER :: n_Legendre_Terms_DimID
     INTEGER :: n_Phase_Elements_DimID
@@ -1783,9 +2030,9 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...Number of radii for microwave data
-    NF90_Status = NF90_DEF_DIM( FileID,MW_REFF_DIMNAME,n_MW_Radii,n_MW_Radii_DimID )
+    NF90_Status = NF90_DEF_DIM( FileID,MW_REFF_WC_DIMNAME,n_MW_Radii,n_MW_Radii_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error defining '//MW_REFF_DIMNAME//' dimension in '//&
+      msg = 'Error defining '//MW_REFF_WC_DIMNAME//' dimension in '//&
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
@@ -1811,15 +2058,15 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...Number of densities for microwave data
-    NF90_Status = NF90_DEF_DIM( FileID,DENSITY_DIMNAME,n_Densities,n_Densities_DimID )
+    NF90_Status = NF90_DEF_DIM( FileID,MW_DENSITY_DIMNAME,n_MW_Densities,n_MW_Densities_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error defining '//DENSITY_DIMNAME//' dimension in '//&
+      msg = 'Error defining '//MW_DENSITY_DIMNAME//' dimension in '//&
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...Number of densities for infrared data
     ! ...Array indexing starts at 0, so +1
-    NF90_Status = NF90_DEF_DIM( FileID,IR_DENSITY_DIMNAME,n_Densities+1,n_IR_Densities_DimID )
+    NF90_Status = NF90_DEF_DIM( FileID,IR_DENSITY_DIMNAME,n_IR_Densities+1,n_IR_Densities_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//IR_DENSITY_DIMNAME//' dimension in '//&
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
@@ -1894,6 +2141,27 @@ CONTAINS
       msg = 'Error writing '//FREQUENCY_IR_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
     END IF
+    
+    ! ...WC_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      WC_MW_VARNAME, &
+      WC_MW_TYPE, &
+      dimIDs=(/n_MW_Radii_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//WC_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,WC_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,WC_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,WC_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,WC_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//WC_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    
     ! ...Reff_MW variable
     NF90_Status = NF90_DEF_VAR( FileID, &
       REFF_MW_VARNAME, &
@@ -1953,23 +2221,45 @@ CONTAINS
     END IF
     ! ...Density variable
     NF90_Status = NF90_DEF_VAR( FileID, &
-      DENSITY_VARNAME, &
+      MW_DENSITY_VARNAME, &
       DENSITY_TYPE, &
-      dimIDs=(/n_Densities_DimID/), &
+      dimIDs=(/n_MW_Densities_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error defining '//DENSITY_VARNAME//' variable in '//&
+      msg = 'Error defining '//MW_DENSITY_VARNAME//' variable in '//&
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,DENSITY_LONGNAME    )
+    
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      IR_DENSITY_VARNAME, &
+      DENSITY_TYPE, &
+      dimIDs=(/n_IR_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//IR_DENSITY_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,MW_DENSITY_LONGNAME    )
     Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,DENSITY_DESCRIPTION )
     Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,DENSITY_UNITS       )
     Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,DENSITY_FILLVALUE   )
     IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//DENSITY_VARNAME//' variable attributes to '//TRIM(Filename)
+      msg = 'Error writing '//MW_DENSITY_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
     END IF
+    
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,IR_DENSITY_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,DENSITY_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,DENSITY_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,DENSITY_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//IR_DENSITY_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    
     ! ...ke_L_MW variable
     NF90_Status = NF90_DEF_VAR( FileID, &
       KE_L_MW_VARNAME, &
@@ -2027,6 +2317,25 @@ CONTAINS
       msg = 'Error writing '//G_L_MW_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
     END IF
+    ! ...kb_L_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      KB_L_MW_VARNAME, &
+      KB_L_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Temperatures_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//KB_L_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,KB_L_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,KB_L_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,KB_L_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,KB_L_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//KB_L_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
     ! ...pcoeff_L_MW variable
     NF90_Status = NF90_DEF_VAR( FileID, &
       PCOEFF_L_MW_VARNAME, &
@@ -2051,7 +2360,7 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       KE_S_MW_VARNAME, &
       KE_S_MW_TYPE, &
-      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID/), &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_MW_Densities_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//KE_S_MW_VARNAME//' variable in '//&
@@ -2070,7 +2379,7 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       W_S_MW_VARNAME, &
       W_S_MW_TYPE, &
-      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID/), &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_MW_Densities_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//W_S_MW_VARNAME//' variable in '//&
@@ -2089,7 +2398,7 @@ CONTAINS
     NF90_Status = NF90_DEF_VAR( FileID, &
       G_S_MW_VARNAME, &
       G_S_MW_TYPE, &
-      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID/), &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_MW_Densities_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//G_S_MW_VARNAME//' variable in '//&
@@ -2104,11 +2413,30 @@ CONTAINS
       msg = 'Error writing '//G_S_MW_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
     END IF
+    ! ...kb_S_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      KB_S_MW_VARNAME, &
+      KB_S_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_MW_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//KB_S_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,KB_S_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,KB_S_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,KB_S_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,KB_S_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//KB_S_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
     ! ...pcoeff_S_MW variable
     NF90_Status = NF90_DEF_VAR( FileID, &
       PCOEFF_S_MW_VARNAME, &
       PCOEFF_S_MW_TYPE, &
-      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_MW_Densities_DimID, &
                n_Legendre_Terms_DimID, n_Phase_Elements_DimID/), &
       varID=VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -2179,6 +2507,25 @@ CONTAINS
     Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,G_IR_FILLVALUE   )
     IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
       msg = 'Error writing '//G_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...kb_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      KB_IR_VARNAME, &
+      KB_IR_TYPE, &
+      dimIDs=(/n_IR_Frequencies_DimID, n_IR_Radii_DimID, n_IR_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//KB_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,KB_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,KB_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,KB_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,KB_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//KB_IR_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...pcoeff_IR variable
