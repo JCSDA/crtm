@@ -3,7 +3,7 @@
 # Copyright and License: see LICENSE
 
 cmake_minimum_required( VERSION 3.12 )
-project( crtm VERSION 2.4.0 LANGUAGES Fortran )
+project( crtm LANGUAGES Fortran )
 
 ## Ecbuild integration
 find_package( ecbuild QUIET )
