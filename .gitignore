@@ -1,0 +1,7 @@
+*.mod
+*.o
+*.a
+build/
+src/Build/
+test/test_build/
+
