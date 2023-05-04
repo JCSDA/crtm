@@ -12,7 +12,7 @@ if test -f "$filename"; then
 else
     #download, untar, move
 		echo "downloading $filename, please wait about 5 minutes (3.2 GB tar file)"
-    wget -q ftp://ftp.ucar.edu/pub/cpaess/bjohns/$filename #jedi set of CRTM binary files
+    wget -q ftp://ftp.ssec.wisc.edu/pub/s4/CRTM/$filename #jedi set of CRTM binary files
     tar -zxvf $filename
 		mv fix_crtm-internal_develop fix
 		echo "fix/ directory created from downloaded $filename."
