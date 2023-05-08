@@ -316,7 +316,7 @@ CONTAINS
       RETURN                                                
     END IF                                                  
  
-    ! Read the cell pressuresa and time data
+    ! Read the cell pressuresa and time data 
     ! ----------------------------------------------
     READ( FileID, IOSTAT=IO_Status ) ODSSU%TC_CellPressure, &
                                      ODSSU%Ref_Time,        &
@@ -608,7 +608,7 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-    ! Write the cell pressuresa and time data
+    ! Write the cell pressuresa and time data 
     ! ----------------------------------------------
     WRITE( FileID, IOSTAT=IO_Status ) ODSSU%TC_CellPressure, &
                                       ODSSU%Ref_Time,        &
