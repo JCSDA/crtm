@@ -11,14 +11,14 @@ if [[ "$uname" == "Linux"  ]] ; then
 		export NC4_DIR=/usr/local/ #singularity container only
 		export HDF_DIR=/usr/local/ #singularity container only
 elif [[ "$uname" == "Darwin" ]] ; then
-		export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"  #mac OS, brew install
-		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"   #mac OS, brew install
+		export NC4_DIR=$(nf-config|awk 'BEGIN{FS="->\ "};/\-\-prefix/ {print $2}')  #mac OS (brew install)
+		export HDF_DIR=$(h5fc -showconfig|awk 'BEGIN{FS=":\ "};/Installation point/ {print $2}')   #mac OS (brew install)
 fi
 
 #set the number of openmp threads
 export OMP_NUM_THREADS=4  #set here for testing purposes, probably want to override this
 
-export FCFLAGS="\
+FCFLAGS="\
 -fbounds-check \
 -mieee-fp \
 -fimplicit-none \
@@ -31,6 +31,10 @@ export FCFLAGS="\
 -Wall \
 -Wconversion \
 -std=f2008"
+if [[ "$(uname -m)" == "arm64"  ]] ; then 
+    FCFLAGS=$(echo $FCFLAGS | sed 's/-mieee-fp//g') # remove -mieee-fp flag for arm (i.e.,apple silicon) gfortran
+fi
+export FCFLAGS
 
 export LDFLAGS="-fopenmp"
 
