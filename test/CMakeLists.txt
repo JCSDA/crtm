@@ -60,7 +60,7 @@ else()
     set(CRTM_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-set( CRTM_COEFFS_BRANCH "2.4.1" )
+set( CRTM_COEFFS_BRANCH "2.4.1_skylab_4.0" )   #NOTE: this forms the basis of the tarball name
 
 # If local path to testfiles is defined don't download
 #if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
@@ -72,10 +72,10 @@ IF(EXISTS  ${CMAKE_SOURCE_DIR}/fix)
 else()
   set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/crtm/${CRTM_COEFFS_BRANCH})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-#  set( ECBUILD_DOWNLOAD_BASE_URL https://gdex.ucar.edu/dataset/jedi-skylab/file )
+  #full intended path:  https://bin.ssec.wisc.edu/pub/s4/CRTM/file/crtm_coefficients_2.4.1_skylab_4.0.tar.gz
   set( ECBUILD_DOWNLOAD_BASE_URL https://bin.ssec.wisc.edu/pub/s4/CRTM/file )
   set( test_files_dirname crtm_coefficients_${CRTM_COEFFS_BRANCH}.tar.gz )
-  set( checksum "0")
+  set( checksum "5ef915c445f94c6ef11f53221521a79e")  #NOTE: md5sum needs to be updated each time the tarball changes
   message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL} to ${CRTM_COEFFS_PATH}")
 
   list( APPEND CRTM_DATA_DOWNLOADER_ARGS
