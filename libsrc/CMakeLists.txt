@@ -1,4 +1,5 @@
 list( APPEND crtm_src_files
+  ACCoeff_netCDF_IO.f90
   ACCoeff_Binary_IO.f90
   ACCoeff_Define.f90
   ADA_Module.f90
@@ -122,6 +123,7 @@ list( APPEND crtm_src_files
   NESDIS_SSMI_SnowEM_Module.f90
   NESDIS_SnowEM_ATMS_Parameters.f90
   NESDIS_SnowEM_Parameters.f90
+  NLTECoeff_netCDF_IO.f90
   NLTECoeff_Binary_IO.f90
   NLTECoeff_Define.f90
   NLTE_Parameters.f90
@@ -149,6 +151,7 @@ list( APPEND crtm_src_files
   ODZeeman_TauCoeff.f90
   PAFV_Define.f90
   Profile_Utility_Parameters.f90
+  RSS_Emissivity_Model.f90
   RTV_Define.f90
   Reflection_Correction_Module.f90
   SEcategory_Define.f90
@@ -159,6 +162,8 @@ list( APPEND crtm_src_files
   Slope_Variance.f90
   Small_Scale_Correction_Module.f90
   Sort_Utility.f90
+	SpcCoeff_IO.f90
+  SpcCoeff_netCDF_IO.f90
   SpcCoeff_Binary_IO.f90
   SpcCoeff_Define.f90
   Spectral_Units_Conversion.f90

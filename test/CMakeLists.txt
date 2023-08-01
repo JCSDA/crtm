@@ -115,6 +115,7 @@ ecbuild_add_resources( TARGET crtm_test_scripts
 # Create list of sensor ids for testing
 list( APPEND Simple_Sensor_Ids
         atms_npp
+        atms_n21
         cris399_npp
         v.abi_gr
         modis_aqua
@@ -242,6 +243,15 @@ ecbuild_add_test (
     TEST_DEPENDS get_crtm_coeffs
     )
 
+ecbuild_add_test( 
+	  TARGET  SpcCoeff_Inspect
+    SOURCES mains/application/SpcCoeff_Inspect.f90
+    ARGS    "testinput/atms_n21.SpcCoeff.bin"
+    OMP     $ENV{OMP_NUM_THREADS}
+    LIBS    crtm
+    TEST_DEPENDS get_crtm_coeffs
+    )
+
 
 #=================================================================================
 #forward and k_matrix regression tests
@@ -360,6 +370,8 @@ SpcCoeff/Big_Endian/crisB1_npp.SpcCoeff.bin
 TauCoeff/ODPS/Big_Endian/crisB1_npp.TauCoeff.bin
 SpcCoeff/Big_Endian/atms_npp.SpcCoeff.bin
 TauCoeff/ODPS/Big_Endian/atms_npp.TauCoeff.bin
+SpcCoeff/Big_Endian/atms_n21.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/atms_n21.TauCoeff.bin
 SpcCoeff/Big_Endian/v.viirs-m_npp.SpcCoeff.bin
 TauCoeff/ODAS/Big_Endian/v.viirs-m_npp.TauCoeff.bin
 SpcCoeff/Big_Endian/v.abi_gr.SpcCoeff.bin

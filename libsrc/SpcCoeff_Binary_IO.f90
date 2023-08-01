@@ -397,18 +397,42 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Read the channel data
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      SpcCoeff%Sensor_Channel            , &
-      SpcCoeff%Polarization              , &
-      SpcCoeff%Channel_Flag              , &
-      SpcCoeff%Frequency                 , &
-      SpcCoeff%Wavenumber                , &
-      SpcCoeff%Planck_C1                 , &
-      SpcCoeff%Planck_C2                 , &
-      SpcCoeff%Band_C1                   , &
-      SpcCoeff%Band_C2                   , &
-      SpcCoeff%Cosmic_Background_Radiance, &
-      SpcCoeff%Solar_Irradiance
+    IF( dummy%Version > 2 ) THEN
+      ! Binary coefficient version 3 introduced for TROPICS instrument.
+      ! The SpcCoeff coefficients contain 'PolAngle' as an additional
+      ! array.
+      READ ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        SpcCoeff%Sensor_Channel            , &
+        SpcCoeff%Polarization              , &
+        SpcCoeff%PolAngle                  , &
+        SpcCoeff%Channel_Flag              , &
+        SpcCoeff%Frequency                 , &
+        SpcCoeff%Wavenumber                , &
+        SpcCoeff%Planck_C1                 , &
+        SpcCoeff%Planck_C2                 , &
+        SpcCoeff%Band_C1                   , &
+        SpcCoeff%Band_C2                   , &
+        SpcCoeff%Cosmic_Background_Radiance, &
+        SpcCoeff%Solar_Irradiance
+    ELSE IF( dummy%Version < 3 ) THEN
+      ! Version 2 is the default binary SpcCoeff version for 
+      ! REL-2.4.0 and older.
+      READ ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        SpcCoeff%Sensor_Channel            , &
+        SpcCoeff%Polarization              , &
+        SpcCoeff%Channel_Flag              , &
+        SpcCoeff%Frequency                 , &
+        SpcCoeff%Wavenumber                , &
+        SpcCoeff%Planck_C1                 , &
+        SpcCoeff%Planck_C2                 , &
+        SpcCoeff%Band_C1                   , &
+        SpcCoeff%Band_C2                   , &
+        SpcCoeff%Cosmic_Background_Radiance, &
+        SpcCoeff%Solar_Irradiance
+    ELSE
+        msg = 'Unrecognized SpcCoeff version. '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+    END IF
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading channel data. '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
@@ -639,18 +663,38 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
     ! ...Write the channel data
-    WRITE( fid, IOSTAT=io_stat ) &
-      SpcCoeff%Sensor_Channel            , &
-      SpcCoeff%Polarization              , &
-      SpcCoeff%Channel_Flag              , &
-      SpcCoeff%Frequency                 , &
-      SpcCoeff%Wavenumber                , &
-      SpcCoeff%Planck_C1                 , &
-      SpcCoeff%Planck_C2                 , &
-      SpcCoeff%Band_C1                   , &
-      SpcCoeff%Band_C2                   , &
-      SpcCoeff%Cosmic_Background_Radiance, &
-      SpcCoeff%Solar_Irradiance             
+    IF(SpcCoeff%Version > 2) THEN
+      WRITE( fid, IOSTAT=io_stat ) &
+          SpcCoeff%Sensor_Channel            , &
+          SpcCoeff%Polarization              , &
+          SpcCoeff%PolAngle                  , &
+          SpcCoeff%Channel_Flag              , &
+          SpcCoeff%Frequency                 , &
+          SpcCoeff%Wavenumber                , &
+          SpcCoeff%Planck_C1                 , &
+          SpcCoeff%Planck_C2                 , &
+          SpcCoeff%Band_C1                   , &
+          SpcCoeff%Band_C2                   , &
+          SpcCoeff%Cosmic_Background_Radiance, &
+          SpcCoeff%Solar_Irradiance 
+    ELSE IF(SpcCoeff%Version < 3) THEN
+      WRITE( fid, IOSTAT=io_stat ) &
+          SpcCoeff%Sensor_Channel            , &
+          SpcCoeff%Polarization              , &
+          SpcCoeff%Channel_Flag              , &
+          SpcCoeff%Frequency                 , &
+          SpcCoeff%Wavenumber                , &
+          SpcCoeff%Planck_C1                 , &
+          SpcCoeff%Planck_C2                 , &
+          SpcCoeff%Band_C1                   , &
+          SpcCoeff%Band_C2                   , &
+          SpcCoeff%Cosmic_Background_Radiance, &
+          SpcCoeff%Solar_Irradiance      
+    ELSE
+      WRITE( msg,'("Unrecognized SpcCoeff Version. Version = ",i0)' ) &
+          SpcCoeff%Version
+      CALL Write_Cleanup(); RETURN
+    END IF       
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing channel data. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
