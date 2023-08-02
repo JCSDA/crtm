@@ -7,16 +7,6 @@ cmake_minimum_required (VERSION 3.12)
 project("CRTM_Tests" VERSION 1.0.1 LANGUAGES Fortran C)
 enable_testing ()
 
-## Ecbuild integration
-find_package( ecbuild QUIET )
-if(NOT ecbuild_FOUND)
-	message(WARNING "ecbuild is required for testing and was not found!")
-	message(WARNING "CRTM tests are disabled!")
-	return()
-endif()
-
-include( ecbuild_system NO_POLICY_SCOPE )
-ecbuild_declare_project()
 list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
 set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
 
@@ -95,7 +85,7 @@ else()
     configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
   endif()
 
-  # add test for downloading data
+  # add command to download coefficient data during build step, rather than as a test
 	add_custom_target(get_crtm_coeffs
     COMMAND ${CMAKE_BINARY_DIR}/bin/crtm_data_downloader.py ${CRTM_DATA_DOWNLOADER_ARGS})
 
@@ -220,62 +210,22 @@ set_tests_properties(test_check_crtm PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=$EN
 add_dependencies(test_check_crtm get_crtm_coeffs)
 
 
-
-#ecbuild_add_test( TARGET  test_check_crtm
-#                  SOURCES mains/application/check_crtm.F90
-#                  OMP     $ENV{OMP_NUM_THREADS}
-#                  LIBS    crtm
-#                  TEST_DEPENDS get_crtm_coeffs)
-
-# ecbuild_add_test( TARGET  test_check_crtm_random
-#                   SOURCES mains/application/check_crtm_random_profiles.F90
-#                   ARGS    "testinput/single_profile.yaml"
-#                   OMP     $ENV{OMP_NUM_THREADS}
-#                   LIBS    crtm
-#                   TEST_DEPENDS get_crtm_coeffs)
-
 #---------------------------------------------------------------------------------
-#unit tests
 
-#first upper level Unit_Test
-
-#implementation of Patrick's modified TL convergence test.
-#ecbuild_add_executable (
-#    TARGET  "TL_TEST"
-#    SOURCES mains/unit/Unit_Test/test_TL.f90
-#    LIBS    crtm
-#    NOINSTALL 
-#    )
-#ecbuild_add_test (
-#    TARGET "Unit_TL_TEST"
-#    COMMAND "TL_TEST"
-#    OMP     $ENV{OMP_NUM_THREADS}
-#    TEST_DEPENDS get_crtm_coeffs
-#    )
-#
-#ecbuild_add_test( 
-#	  TARGET  SpcCoeff_Inspect
-#    SOURCES mains/application/SpcCoeff_Inspect.f90
-#    ARGS    "testinput/atms_n21.SpcCoeff.bin"
-#    OMP     $ENV{OMP_NUM_THREADS}
-#    LIBS    crtm
-#    TEST_DEPENDS get_crtm_coeffs
-#    )
+add_executable(Unit_TL_TEST mains/unit/Unit_Test/test_TL.f90)
+target_link_libraries(Unit_TL_TEST PRIVATE crtm)
+add_test(NAME test_Unit_TL_TEST
+         COMMAND $<TARGET_FILE:Unit_TL_TEST>)
+set_tests_properties(test_Unit_TL_TEST PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}")
+add_dependencies(Unit_TL_TEST get_crtm_coeffs)
 
 
-add_executable(TL_TEST mains/unit/Unit_Test/test_TL.f90)
-target_link_libraries(TL_TEST PRIVATE crtm)
-set_target_properties(TL_TEST PROPERTIES EXCLUDE_FROM_ALL TRUE)
-
-add_custom_command(OUTPUT run_Unit_TL_TEST
-                   COMMAND $<TARGET_FILE:TL_TEST>
-                   DEPENDS TL_TEST
-                   COMMENT "Running Unit_TL_TEST")
-
-#add_custom_target(Unit_TL_TEST ALL
-#                  DEPENDS run_Unit_TL_TEST get_crtm_coeffs)
-
-
+add_executable(SpcCoeff_Inspect mains/application/SpcCoeff_Inspect.f90)
+target_link_libraries(SpcCoeff_Inspect PRIVATE crtm)
+add_test(NAME run_SpcCoeff_Inspect
+         COMMAND $<TARGET_FILE:SpcCoeff_Inspect> "testinput/atms_n21.SpcCoeff.bin")
+set_tests_properties(run_SpcCoeff_Inspect PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}")
+add_dependencies(SpcCoeff_Inspect get_crtm_coeffs)
 
 #=================================================================================
 #forward and k_matrix regression tests
@@ -286,20 +236,18 @@ foreach(regtype IN LISTS regression_types)
     if (isregtype AND istesttype)
        continue() #skip Aircraft type for k_Matrix
     endif()
-    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-                            LIBS    crtm
-                            NOINSTALL)
- 
+
+    add_executable(test_${regtype}_test_${testtype} mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+    target_link_libraries(test_${regtype}_test_${testtype} PRIVATE crtm)
+    set_target_properties(test_${regtype}_test_${testtype} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  
-          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-                            OMP     $ENV{OMP_NUM_THREADS}
-                            COMMAND "test_${regtype}_test_${testtype}"
-                            ARGS    "${sensor_id}"
-                            TEST_DEPENDS get_crtm_coeffs)
+        add_test(NAME test_${regtype}_${testtype}_${sensor_id}
+                 COMMAND $<TARGET_FILE:test_${regtype}_test_${testtype}> "${sensor_id}")
+        set_tests_properties(test_${regtype}_${testtype}_${sensor_id} PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}")
+        add_dependencies(test_${regtype}_test_${testtype} get_crtm_coeffs)
     endforeach()
-  endforeach() 
+  endforeach()
 endforeach()
 
 
@@ -307,22 +255,17 @@ endforeach()
 #TLAD Regression tests
 foreach(regtype IN LISTS TLAD_types)
   foreach(testtype IN LISTS TLAD_tests)
-    if (isregtype AND istesttype)
-       continue() #skip Aircraft type for k_Matrix
-    endif()
-    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-                            LIBS    crtm
-                            NOINSTALL)
-  
+    add_executable(test_${regtype}_test_${testtype} mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+    target_link_libraries(test_${regtype}_test_${testtype} PRIVATE crtm)
+    set_target_properties(test_${regtype}_test_${testtype} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-                            OMP     $ENV{OMP_NUM_THREADS}
-                            COMMAND "test_${regtype}_test_${testtype}"
-                            ARGS    "${sensor_id}"
-                            TEST_DEPENDS get_crtm_coeffs)
+        add_test(NAME test_${regtype}_${testtype}_${sensor_id}
+                 COMMAND $<TARGET_FILE:test_${regtype}_test_${testtype}> "${sensor_id}")
+        set_tests_properties(test_${regtype}_${testtype}_${sensor_id} PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}")
+        add_dependencies(test_${regtype}_test_${testtype} get_crtm_coeffs)
     endforeach()
-  endforeach() 
+  endforeach()
 endforeach()
 
 
