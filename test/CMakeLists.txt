@@ -55,21 +55,24 @@ set( REPO_VERSION crtm/2.4.0 )
 # If local path to testfiles is defined don't download
 IF(EXISTS  ${CMAKE_SOURCE_DIR}/fix)
   set( CRTM_COEFFS_PATH ${CMAKE_SOURCE_DIR}/fix )
-  message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${CRTM_COEFFS_PATH}")
-  message("Using existing local fix directory instead of downloading.")
-	add_custom_target(get_crtm_coeffs) #empty target so tests don't complain
+  message(STATUS "Use CRTM_COEFFS_PATH: ${CRTM_COEFFS_PATH}")
+  message(STATUS "Using existing local fix/ directory instead of downloading.")
+	add_custom_target(get_crtm_coeffs) #empty target so tests don't complain about dependency
   set(FIX_PREFIX "") 
 else()
 	# Download CRTM coefficients
   set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-  set( ECBUILD_DOWNLOAD_BASE_URL https://bin.ssec.wisc.edu/pub/s4/CRTM/ )
-  set( test_files_dirname fix_REL-2.4.0_emc_07112023.tgz )
-  set( checksum "0")
-  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL} to ${CRTM_COEFFS_PATH}")
+  set( DOWNLOAD_BASE_URL https://bin.ssec.wisc.edu/pub/s4/CRTM/ )
+
+  set( test_files_dirname fix_REL-2.4.0_emc_07112023.tgz )  #UPDATE TARBALL FILENAME HERE
+  set( checksum "ef2cb9d6ac900017e6a0c1c10464a1c6") #MD5SUM, update this if the file above is updated / changed
+
+  message(STATUS "if fix/ does not exist, download CRTM coeffs files from: ${DOWNLOAD_BASE_URL} to ${CRTM_COEFFS_PATH}")
+  message(STATUS "otherwise, use fix/ for ctests.")
 
   list( APPEND CRTM_DATA_DOWNLOADER_ARGS
-                ${ECBUILD_DOWNLOAD_BASE_URL}
+                ${DOWNLOAD_BASE_URL}
                 ${CRTM_COEFFS_PATH}
                 ${test_files_dirname}
                 ${checksum} )
@@ -239,7 +242,6 @@ foreach(regtype IN LISTS regression_types)
 
     add_executable(test_${regtype}_test_${testtype} mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
     target_link_libraries(test_${regtype}_test_${testtype} PRIVATE crtm)
-    set_target_properties(test_${regtype}_test_${testtype} PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
         add_test(NAME test_${regtype}_${testtype}_${sensor_id}
@@ -257,7 +259,6 @@ foreach(regtype IN LISTS TLAD_types)
   foreach(testtype IN LISTS TLAD_tests)
     add_executable(test_${regtype}_test_${testtype} mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
     target_link_libraries(test_${regtype}_test_${testtype} PRIVATE crtm)
-    set_target_properties(test_${regtype}_test_${testtype} PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
         add_test(NAME test_${regtype}_${testtype}_${sensor_id}
