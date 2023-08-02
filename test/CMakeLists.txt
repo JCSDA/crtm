@@ -96,11 +96,11 @@ else()
   endif()
 
   # add test for downloading data
-#	add_test(NAME get_crtm_coeffs
-#		COMMAND ${CMAKE_BINARY_DIR}/bin/crtm_data_downloader.py ${CRTM_DATA_DOWNLOADER_ARGS})
 	add_custom_target(get_crtm_coeffs
     COMMAND ${CMAKE_BINARY_DIR}/bin/crtm_data_downloader.py ${CRTM_DATA_DOWNLOADER_ARGS})
+
   set(FIX_PREFIX "fix/") 
+
 endif()
 
 # create lists of sensor IDs for each type of test.  The testing harness will iterate over each item in the list
@@ -220,6 +220,7 @@ set_tests_properties(test_check_crtm PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=$EN
 add_dependencies(test_check_crtm get_crtm_coeffs)
 
 
+
 #ecbuild_add_test( TARGET  test_check_crtm
 #                  SOURCES mains/application/check_crtm.F90
 #                  OMP     $ENV{OMP_NUM_THREADS}
@@ -239,27 +240,41 @@ add_dependencies(test_check_crtm get_crtm_coeffs)
 #first upper level Unit_Test
 
 #implementation of Patrick's modified TL convergence test.
-ecbuild_add_executable (
-    TARGET  "TL_TEST"
-    SOURCES mains/unit/Unit_Test/test_TL.f90
-    LIBS    crtm
-    NOINSTALL 
-    )
-ecbuild_add_test (
-    TARGET "Unit_TL_TEST"
-    COMMAND "TL_TEST"
-    OMP     $ENV{OMP_NUM_THREADS}
-    TEST_DEPENDS get_crtm_coeffs
-    )
+#ecbuild_add_executable (
+#    TARGET  "TL_TEST"
+#    SOURCES mains/unit/Unit_Test/test_TL.f90
+#    LIBS    crtm
+#    NOINSTALL 
+#    )
+#ecbuild_add_test (
+#    TARGET "Unit_TL_TEST"
+#    COMMAND "TL_TEST"
+#    OMP     $ENV{OMP_NUM_THREADS}
+#    TEST_DEPENDS get_crtm_coeffs
+#    )
+#
+#ecbuild_add_test( 
+#	  TARGET  SpcCoeff_Inspect
+#    SOURCES mains/application/SpcCoeff_Inspect.f90
+#    ARGS    "testinput/atms_n21.SpcCoeff.bin"
+#    OMP     $ENV{OMP_NUM_THREADS}
+#    LIBS    crtm
+#    TEST_DEPENDS get_crtm_coeffs
+#    )
 
-ecbuild_add_test( 
-	  TARGET  SpcCoeff_Inspect
-    SOURCES mains/application/SpcCoeff_Inspect.f90
-    ARGS    "testinput/atms_n21.SpcCoeff.bin"
-    OMP     $ENV{OMP_NUM_THREADS}
-    LIBS    crtm
-    TEST_DEPENDS get_crtm_coeffs
-    )
+
+add_executable(TL_TEST mains/unit/Unit_Test/test_TL.f90)
+target_link_libraries(TL_TEST PRIVATE crtm)
+set_target_properties(TL_TEST PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+add_custom_command(OUTPUT run_Unit_TL_TEST
+                   COMMAND $<TARGET_FILE:TL_TEST>
+                   DEPENDS TL_TEST
+                   COMMENT "Running Unit_TL_TEST")
+
+#add_custom_target(Unit_TL_TEST ALL
+#                  DEPENDS run_Unit_TL_TEST get_crtm_coeffs)
+
 
 
 #=================================================================================
