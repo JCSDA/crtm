@@ -397,7 +397,7 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Read the channel data
-    IF( dummy%Version > 2 ) THEN
+    IF( dummy%Version > 3 ) THEN
       ! Binary coefficient version 3 introduced for TROPICS instrument.
       ! The SpcCoeff coefficients contain 'PolAngle' as an additional
       ! array.
@@ -414,7 +414,7 @@ CONTAINS
         SpcCoeff%Band_C2                   , &
         SpcCoeff%Cosmic_Background_Radiance, &
         SpcCoeff%Solar_Irradiance
-    ELSE IF( dummy%Version < 3 ) THEN
+    ELSE IF( dummy%Version < 4 ) THEN
       ! Version 2 is the default binary SpcCoeff version for 
       ! REL-2.4.0 and older.
       READ ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
