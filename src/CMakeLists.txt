@@ -227,6 +227,11 @@ target_link_libraries(${PROJECT_NAME}_static PUBLIC NetCDF::NetCDF_Fortran)
 #Fortran module output directory for build and install interfaces
 set(MODULE_DIR module/${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})
 set_target_properties(${PROJECT_NAME} PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR})
+set_source_files_properties(
+  ${CMAKE_CURRENT_SOURCE_DIR}/CRTM_K_Matrix_Module.f90
+  PROPERTIES COMPILE_FLAGS "-cpp"
+)
+
 install(DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR}/ DESTINATION ${MODULE_DIR})
 target_include_directories(${PROJECT_NAME} INTERFACE
                                 $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${MODULE_DIR}>
