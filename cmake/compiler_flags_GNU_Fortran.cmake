@@ -11,7 +11,7 @@
 ####################################################################
 
 if( HAVE_AUTOPROFILE )
-  set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -finstrument-functions")
+  set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -finstrument-functions -fpp")
 endif( )
 
 set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -D_REAL8_ -ffree-line-length-none")

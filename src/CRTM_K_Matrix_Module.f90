@@ -425,7 +425,12 @@ CONTAINS
       CALL OMP_SET_MAX_ACTIVE_LEVELS(1)
     ELSE
 
-      n_profile_threads = n_Profiles  !** e.g, NOMP = 8, n_profiles = 2 -> n_profile_threads = 2
+       n_profile_threads = n_Profiles  !** e.g, NOMP = 8, n_profiles = 2 -> n_profile_threads = 2
+!** BTJ: temporary preprocessor directive for openMP over channels bypass, permitting modern ifort / ifx versions to run properly
+!** https://github.com/JCSDA/CRTMv3/issues/231
+#if 1
+       n_channel_threads=1
+#else
       !** if n_channels < (n_omp_threads-n_profile_threads), no need to use additional threads
       n_channel_threads = MIN(n_channels, MAX(1,n_omp_threads-n_profile_threads))
       IF (n_profile_threads + n_channel_threads > n_omp_threads) THEN
@@ -434,6 +439,7 @@ CONTAINS
               n_profile_threads, n_channel_threads, n_omp_threads
          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       END IF
+#endif
       if(n_channel_threads > 1) THEN
         CALL OMP_SET_MAX_ACTIVE_LEVELS(2)
       ELSE
@@ -923,12 +929,23 @@ CONTAINS
         ! ------------
         ! THREAD LOOP
         ! ------------
+!** BTJ preprocessor directive bypass of OMP directives causing issues when compiling with modern ifort/ifx
+!** https://github.com/JCSDA/CRTMv3/issues/231        
+#if 1
+        IF (n_channel_threads > 1) THEN
+           WRITE( Message,'("ERROR: n_channel_threads > 1, this should not happen with the current preprocessor directives")')
+
+           Error_status = FAILURE
+           CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+        END IF
+#else
 !$OMP PARALLEL DO NUM_THREADS(n_channel_threads)                        &
 !$OMP    FIRSTPRIVATE(ln, r_cloudy)                                     &
 !$OMP    PRIVATE(Message, ChannelIndex, n_Full_Streams, PVar, AAvar,    &
 !$OMP          start_ch, end_ch, Wavenumber, Status_FWD, Status_K,      &
 !$OMP          transmittance, transmittance_K, transmittance_clear,     &
 !$OMP          transmittance_clear_K, l, mth_Azi)
+#endif
         Thread_Loop: DO nt = 1, n_channel_threads
           start_ch = (nt - 1) * chunk_ch + 1
           IF ( nt == n_channel_threads) THEN
@@ -1681,8 +1698,12 @@ CONTAINS
             END IF
 
           END DO Channel_Loop
-        END DO Thread_Loop
+       END DO Thread_Loop
+!** BTJ preprocessor directive bypass of OMP directives causing issues when compiling with modern ifort/ifx
+!** https://github.com/JCSDA/CRTMv3/issues/231
+#if 0
 !$OMP END PARALLEL DO
+#endif        
         IF ( Error_Status == FAILURE ) RETURN
         ln = ln + n_sensor_channels - n_inactive_channels(n_channel_threads)
 

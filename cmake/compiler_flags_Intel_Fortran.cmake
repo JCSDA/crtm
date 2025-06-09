@@ -10,7 +10,7 @@
 # FLAGS COMMON TO ALL BUILD TYPES
 ####################################################################
 
-set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl")
+set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -assume byterecl -fpp")
 
 if( HAVE_AUTOPROFILE )
   set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -finstrument-functions")
