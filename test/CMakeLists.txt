@@ -165,40 +165,51 @@ list (APPEND TLAD_tests
 
 #####################################################################
 
-# sources
-set(CLOUDCOEFF_MAIN mains/application/CloudCoeff_Generate/CloudCoeff_Generate.F90)
-set(CLOUDCOEFF_EXTRAS
-  mains/application/CloudCoeff_Generate/cdmx.f90
-  mains/application/CloudCoeff_Generate/density.f90
-  mains/application/CloudCoeff_Generate/Dmiesub.f90
-  mains/application/CloudCoeff_Generate/epsrefwat.f90
-  mains/application/CloudCoeff_Generate/read_melt_db.f90
-  mains/application/CloudCoeff_Generate/refice.f90
-  mains/application/CloudCoeff_Generate/Warren_Brandt_2008.f90
-)
+## sources
+#set(CLOUDCOEFF_MAIN mains/application/CloudCoeff_Generate/CloudCoeff_Generate.F90)
+#set(CLOUDCOEFF_EXTRAS
+#  mains/application/CloudCoeff_Generate/freq_io.f90
+#  mains/application/CloudCoeff_Generate/cdmx.f90
+#  mains/application/CloudCoeff_Generate/density.f90
+#  mains/application/CloudCoeff_Generate/Dmiesub.f90
+#  mains/application/CloudCoeff_Generate/epsrefwat.f90
+#  mains/application/CloudCoeff_Generate/read_melt_db.f90
+#  mains/application/CloudCoeff_Generate/refice.f90
+#  mains/application/CloudCoeff_Generate/Warren_Brandt_2008.f90
+#)
+#
+## executable
+#add_executable(cloudcoeff_gen)
+#target_sources(cloudcoeff_gen PRIVATE ${CLOUDCOEFF_MAIN} ${CLOUDCOEFF_EXTRAS})
+#
+## include dirs (add any extras you need)
+## target_include_directories(cloudcoeff_gen PRIVATE /path/to/extra/includes)
+#
+## compile/link options similar to your Makefile
+#target_compile_options(cloudcoeff_gen PRIVATE
+#  $<$<Fortran_COMPILER_ID:GNU>:-O3 -cpp -fconvert=swap>
+#)
+#target_link_options(cloudcoeff_gen PRIVATE
+#  $<$<Fortran_COMPILER_ID:GNU>:-fopenmp -fconvert=swap>
+#)
+#
+## link libs
+#target_link_libraries(cloudcoeff_gen PRIVATE
+#  crtm
+#  NetCDF::NetCDF_Fortran
+#)
+## optional: name to match your old Makefile’s EXE_FILE
+#install(TARGETS cloudcoeff_gen RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# executable
-add_executable(cloudcoeff_gen)
-target_sources(cloudcoeff_gen PRIVATE ${CLOUDCOEFF_MAIN} ${CLOUDCOEFF_EXTRAS})
 
-# include dirs (add any extras you need)
-# target_include_directories(cloudcoeff_gen PRIVATE /path/to/extra/includes)
-
-# compile/link options similar to your Makefile
-target_compile_options(cloudcoeff_gen PRIVATE
-  $<$<Fortran_COMPILER_ID:GNU>:-O3 -cpp -fconvert=swap>
-)
-target_link_options(cloudcoeff_gen PRIVATE
-  $<$<Fortran_COMPILER_ID:GNU>:-fopenmp -fconvert=swap>
-)
-
-# link libs
-target_link_libraries(cloudcoeff_gen PRIVATE
+add_executable(cloudcoeff_gen_mw_schemes)
+target_sources(cloudcoeff_gen_mw_schemes PRIVATE mains/application/CloudCoeff_Generate/CloudCoeff_Generate_MW_Schemes.F90)
+target_link_libraries(cloudcoeff_gen_mw_schemes PRIVATE
   crtm
   NetCDF::NetCDF_Fortran
 )
 # optional: name to match your old Makefile’s EXE_FILE
-install(TARGETS cloudcoeff_gen RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS cloudcoeff_gen_mw_schemes RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 
 ecbuild_add_test( TARGET  test_check_crtm

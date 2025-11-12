@@ -485,18 +485,18 @@ CONTAINS
     IF ( .NOT. CloudCoeff_Associated(CloudCoeff) ) RETURN
     ! Dimensional vectors
     WRITE(*,'(/3x,"Dimensional vectors...")')
-    WRITE(*,'(5x,"CloudCoeff Frequency_MW:")')
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Frequency_MW
-    WRITE(*,'(5x,"CloudCoeff Frequency_IR:")') 
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Frequency_IR
-    WRITE(*,'(5x,"CloudCoeff Reff_MW     :")') 
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Reff_MW     
-    WRITE(*,'(5x,"CloudCoeff Reff_IR     :")') 
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Reff_IR     
-    WRITE(*,'(5x,"CloudCoeff Temperature :")') 
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Temperature 
-    WRITE(*,'(5x,"CloudCoeff Density     :")') 
-    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Density     
+    WRITE(*,'(5x,"CloudCoeff Frequency_MW: (GHz)")')
+    WRITE(*,'(5(1x,g12.4,:))') CloudCoeff%Frequency_MW
+    WRITE(*,'(5x,"CloudCoeff Frequency_IR: (cm^{-1})")') 
+    WRITE(*,'(5(1x,g12.4,:))') CloudCoeff%Frequency_IR
+    WRITE(*,'(5x,"CloudCoeff Reff_MW (um)    :")') 
+    WRITE(*,'(5(1x,g12.4,:))') CloudCoeff%Reff_MW     
+    WRITE(*,'(5x,"CloudCoeff Reff_IR (um)    :")') 
+    WRITE(*,'(5(1x,g12.4,:))') CloudCoeff%Reff_IR     
+    WRITE(*,'(5x,"CloudCoeff Temperature (K) :")') 
+    WRITE(*,'(5(1x,g12.4,:))') CloudCoeff%Temperature 
+    WRITE(*,'(5x,"CloudCoeff Density Scheme    :")') 
+    WRITE(*,'(5(1x,g12.4,:))') CloudCoeff%Density     
 
     ! Microwave data
     WRITE(*,'(/3x,"Microwave data...")')
