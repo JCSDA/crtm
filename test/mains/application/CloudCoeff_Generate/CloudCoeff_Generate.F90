@@ -28,7 +28,7 @@ PROGRAM CloudCoeff_Generate_default_format
   ! Module use
   USE File_Utility        , ONLY: File_Exists
   USE CloudCoeff_Binary_IO, ONLY: CloudCoeff_Binary_InquireFile, CloudCoeff_Binary_ReadFile
-
+  USE freq_io
 
 
   ! Disable implicit typing
@@ -44,20 +44,20 @@ PROGRAM CloudCoeff_Generate_default_format
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'CloudCoeff_Generate_New'
-  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-       '$Id: CloudCoeff_Generate_New.f90 46000 2014-09-24 17:36:31Z paul.vandelst@noaa.gov $'
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = ''
+
 
   ! ------------
   ! Parameters 
   ! ------------
 
   INTEGER, PARAMETER :: ML = 512
-  INTEGER, PARAMETER :: n_MW_Frequencies = 31
-  INTEGER, PARAMETER :: n_MW_Radii       = 10
-  INTEGER, PARAMETER :: n_IR_Frequencies = 61
-  INTEGER, PARAMETER :: n_IR_Radii       = 10
+  INTEGER, PARAMETER :: n_MW_Frequencies = 70
+  INTEGER, PARAMETER :: n_MW_Radii       = 131
+  INTEGER, PARAMETER :: n_IR_Frequencies = 470
+  INTEGER, PARAMETER :: n_IR_Radii       = 39  !** modified top stop at 500 microns, maybe modify more to stop at 100 if calcs bottom out past 100? 
   INTEGER, PARAMETER :: n_Temperatures   =  5
-  INTEGER, PARAMETER :: n_Densities      =  3
+  INTEGER, PARAMETER :: n_Densities      =  4
   !  n_IR_Densities isn't a 2.4.x dimension for cloudcoeff.  the IR densities are n_Densities+1, where Densities 1:n_Densities are solid, and density 0 is liquid
   !  also, IR_Radii can be smaller or different from MW radii, but liquid and solid share the same radii set.
 !  INTEGER, PARAMETER :: n_IR_Densities   =  n_Densities + 1  !** not 100% sure about this 
@@ -145,35 +145,19 @@ PROGRAM CloudCoeff_Generate_default_format
   NUMD    = 300
   MAXLEG  = n_Legendre_Terms+1
 
+
+  
   !** modify to read from input file (frequency, GHz)
-  Frequency_MW(1:n_MW_Frequencies) = (/ 1.4d0, 6.8d0, 6.925d0, 10.7d0, 18.7d0, 19.35d0, 21.3d0, 22.235d0, 23.8d0, 31.4d0, &
-       36.5d0, 37d0, 50.3d0, 52.8d0, 53.506d0, 54.4d0, 54.94d0, 55.5d0, 57.29d0, 59.4d0, 60.672d0, 63.283d0, 70d0, 75d0,  &
-       85.5d0, 89d0, 91.655d0, 150d0, 157d0, 183.31d0, 190.31d0 /)  !** taken straight from cloudcoeff netcdf 
+  call read_frequencies_mw("MW_freq.txt",   Frequency_MW, n_MW_Frequencies)
 
   !** modify to read from input file (wavenumber, cm^{-1})
-  Frequency_IR(1:n_IR_Frequencies) = (/ &
-       200.000000000000d0, 272.479564032698d0, 322.580645161290d0, 373.134328358209d0, 423.728813559322d0,                     &
-       473.933649289099d0, 523.560209424084d0, 574.712643678161d0, 625.000000000000d0, 675.675675675676d0, 724.637681159420d0, &
-       775.193798449612d0, 847.457627118644d0, 946.969696969697d0, 1111.11111111111d0, 1364.25648021828d0, 1615.50888529887d0, &
-       1865.67164179104d0, 2222.22222222222d0, 2724.79564032698d0, 3095.97523219814d0, 3289.47368421053d0, 3448.27586206897d0, &
-       3623.18840579710d0, 3875.96899224806d0, 4237.28813559322d0, 4739.33649289100d0, 5235.60209424084d0, 5747.12643678161d0, &
-       6097.56097560976d0, 6329.11392405063d0, 6849.31506849315d0, 7518.79699248120d0, 8064.51612903226d0, 8333.33333333333d0, &
-       8620.68965517241d0, 8849.55752212389d0, 9090.90909090909d0, 9345.79439252336d0, 9615.38461538462d0, 9900.99009900990d0, &
-       10309.2783505155d0, 10752.6881720430d0, 11235.9550561798d0, 12048.1927710843d0, 12820.5128205128d0, 13513.5135135135d0, &
-       14285.7142857143d0, 14925.3731343284d0, 15625.0000000000d0, 16666.6666666667d0, 17543.8596491228d0, 18181.8181818182d0, &
-       19230.7692307692d0, 20408.1632653061d0, 21739.1304347826d0, 23809.5238095238d0, 26315.7894736842d0, 28571.4285714286d0, &
-       32258.0645161290d0, 37037.0370370370d0 /)
-
-  !** populate the effective radius, temperature, and density variables 
-  !** modify to read from input file
-  Reff_MW(1:n_MW_Radii)         = (/ 5.0d0, 15.0d0, 30.0d0, 50.0d0, 100.0d0, 300.0d0, 500.0d0, 800.0d0, 1000.0d0, 1500.0d0 /) !** [microns]
-  !** read from input file: should it be the same as MW?
-  Reff_IR(1:n_IR_Radii)         = (/ 2.0d0, 3.0d0, 4.0d0, 5.0d0, 8.0d0, 10.0d0, 15.0d0, 20.0d0, 50.0d0, 100.0d0 /) !** [microns]
+  call read_wavenumbers_ir("UVIR_WN.txt",   Frequency_IR, n_IR_Frequencies)
 
   !** read from input file.  
-  Temperature(1:n_Temperatures) = (/ 263.16d0, 273.16d0, 282d0, 290d0, 300d0 /) !** [K]
+  Temperature(1:n_Temperatures) = (/ 190.0, 210.0, 230.0, 250.0, 270.0 /) !** [K]  Temperatures for ice phase particles. 
   !** densities are really proxies for different microphysics schemes. 
-  Density(1:n_Densities)        = (/ 100.0d0, 400.0d0, 900.0d0 /)  !** [kg/m^3]
+  Density(1:n_Densities)        = (/ 1, 2, 3, 4 /)  !** [kg/m^3]
+
   !** a better approach here would be to read in the mass-dimension relationship, and compute density from that.  
   
   !** create the cloudcoeff structure
@@ -189,9 +173,6 @@ PROGRAM CloudCoeff_Generate_default_format
   !** check here for CloudCoeff structure, is it already correctly allocated?
   !** e.g., call Inspect?
  
-  CALL CloudCoeff_Inspect(CloudCoeff)
-
-  STOP 'bp'
   
   !** Write the dimension-specific data to the new CloudCoeff structure
   CloudCoeff%n_MW_Frequencies = n_MW_Frequencies
@@ -202,6 +183,55 @@ PROGRAM CloudCoeff_Generate_default_format
   CloudCoeff%Reff_IR          = Reff_IR(:)
   CloudCoeff%Temperature      = Temperature(:)
   CloudCoeff%Density          = Density(:) 
+
+  CALL CloudCoeff_Inspect(CloudCoeff)
+
+  !** replace solid microwave properties in CloudCoeff
+  CloudCoeff%ke_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities) 
+  CloudCoeff%w_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities) 
+  CloudCoeff%g_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities) 
+
+  
+  
+  !** from Patrick's rw_cloudcoeff.f90:
+  DO i = 1, DEF_N_STREAM_SETS  !** 1:5                          =>  1,  2,  3,  4,  5
+     LOW = DEF_LEGENDRE_OFFSET(i) !**  [ 0, 0, 5, 12, 21]       =>  0,  0,  5, 12, 21
+     HIGH = LOW + DEF_N_STREAMS(i) !** LOW + [ 2, 4, 6,  8, 16] =>  2,  4, 11, 20, 37
+     IF (n_Phase_Elements == 1) THEN                         !** min:1, max:38
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,1) = coef1(LOW+1:HIGH+1)/4.0d0
+     ELSEIF (n_Phase_Elements == 2) THEN
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,1) = coef1(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,2) = coef2(LOW+1:HIGH+1)/4.0d0
+     ELSEIF (n_Phase_Elements == 3) THEN
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,1) = coef1(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,2) = coef2(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,3) = coef3(LOW+1:HIGH+1)/4.0d0
+     ELSEIF (n_Phase_Elements == 4) THEN
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,1) = coef1(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,2) = coef2(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,3) = coef3(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,4) = coef4(LOW+1:HIGH+1)/4.0d0
+     ELSEIF (n_Phase_Elements == 5) THEN
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,1) = coef1(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,2) = coef2(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,3) = coef3(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,4) = coef4(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,5) = coef1(LOW+1:HIGH+1)/4.0d0
+     ELSEIF (n_Phase_Elements == 6) THEN
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,1) = coef1(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,2) = coef2(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,3) = coef3(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,4) = coef4(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,5) = coef1(LOW+1:HIGH+1)/4.0d0
+        CloudCoeff%pcoeff_S_MW(1:n_MW_Frequencies,1:n_MW_Radii,1:n_Densities,LOW:HIGH,6) = coef2(LOW+1:HIGH+1)/4.0d0
+     ELSE
+        STOP 'number of phase elements too large (n_Phase_Elements > 6)'
+     END IF
+  END DO
+  
+  
+  STOP 'bp'
+
   
 
   !** strategy from here:
